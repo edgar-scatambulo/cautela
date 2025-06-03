@@ -28,11 +28,10 @@ export function PoliceOfficerForm({ onSubmit, defaultValues, isSubmitting }: Pol
   const form = useForm<z.infer<typeof PoliceOfficerSchema>>({
     resolver: zodResolver(PoliceOfficerSchema),
     defaultValues: {
-      name: defaultValues?.name || "",
-      functionalId: defaultValues?.functionalId || "",
+      name: defaultValues?.name || "", // Will be "Nome de Guerra"
+      functionalId: defaultValues?.functionalId || "", // Will be "Contato"
       rank: defaultValues?.rank || "",
       unit: defaultValues?.unit || "",
-      contact: defaultValues?.contact || "",
       observations: defaultValues?.observations || "",
     },
   });
@@ -45,9 +44,9 @@ export function PoliceOfficerForm({ onSubmit, defaultValues, isSubmitting }: Pol
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nome Completo</FormLabel>
+              <FormLabel>Nome de Guerra</FormLabel>
               <FormControl>
-                <Input placeholder="Ex: João da Silva" {...field} />
+                <Input placeholder="Ex: SGT Silva" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -56,15 +55,14 @@ export function PoliceOfficerForm({ onSubmit, defaultValues, isSubmitting }: Pol
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="functionalId"
+            name="functionalId" // This field now represents "Contato"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Identificação Funcional (Matrícula)</FormLabel>
+                <FormLabel>Contato</FormLabel>
                 <FormControl>
                   <Input 
-                    placeholder="Ex: PM123456" 
+                    placeholder="Telefone ou Email" 
                     {...field} 
-                    onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                   />
                 </FormControl>
                 <FormMessage />
@@ -93,19 +91,6 @@ export function PoliceOfficerForm({ onSubmit, defaultValues, isSubmitting }: Pol
               <FormLabel>Unidade/Setor</FormLabel>
               <FormControl>
                 <Input placeholder="Ex: 1º BPM, ROTAM, Inteligência" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="contact"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Contato (Opcional)</FormLabel>
-              <FormControl>
-                <Input placeholder="Telefone ou Email" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

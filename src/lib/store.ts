@@ -2,8 +2,8 @@
 import * as React from 'react';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { Equipment, SystemUser, PoliceOfficer, Loan } from './types'; // Interfaces
-import { UserRole, EquipmentType, LoanStatus } from './types'; // Enums (used as values)
+import type { Equipment, SystemUser, PoliceOfficer, Loan } from './types'; 
+import { UserRole, EquipmentType, LoanStatus } from './types'; 
 import { v4 as uuidv4 } from 'uuid';
 
 interface AppState {
@@ -38,7 +38,7 @@ const initialAdminUser: SystemUser = {
   name: 'Admin User',
   email: 'admin@cautela.com',
   username: 'admin',
-  password: 'tricolor', // Added password
+  password: 'tricolor', 
   role: UserRole.ADMIN,
   isActive: true,
   createdAt: new Date().toISOString(),
@@ -50,14 +50,14 @@ export const useStore = create<AppState>()(
     isAuthenticated: false,
     currentUser: null,
     equipments: [
-      { id: uuidv4(), type: EquipmentType.CELULAR, brand: 'Samsung', model: 'Galaxy S21', serialNumber: 'SN12345A', status: 'Disponível', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: uuidv4(), type: EquipmentType.IMPRESSORA, brand: 'HP', model: 'LaserJet Pro', serialNumber: 'SN67890B', status: 'Disponível', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: uuidv4(), type: EquipmentType.RADIO, brand: 'Motorola', model: 'APX 6000', serialNumber: 'SN54321C', status: 'Em Cautela', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: uuidv4(), type: EquipmentType.CELULAR, brand: 'Samsung Galaxy S21', serialNumber: 'SN12345A', status: 'Disponível', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: uuidv4(), type: EquipmentType.IMPRESSORA, brand: 'HP LaserJet Pro', serialNumber: 'SN67890B', status: 'Disponível', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: uuidv4(), type: EquipmentType.RADIO, brand: 'Motorola APX 6000', serialNumber: 'SN54321C', status: 'Em Cautela', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
     ],
     users: [initialAdminUser],
     officers: [
-      { id: uuidv4(), name: 'Oficial Silva', functionalId: 'PM123', rank: 'Soldado', unit: '1º BPM', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: uuidv4(), name: 'Oficial Costa', functionalId: 'PM456', rank: 'Cabo', unit: 'ROTAM', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: uuidv4(), name: 'SGT Silva', functionalId: 'silva@email.com', rank: 'Sargento', unit: '1º BPM', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: uuidv4(), name: 'CB Costa', functionalId: '(11) 98765-4321', rank: 'Cabo', unit: 'ROTAM', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
     ],
     loans: [],
 
@@ -102,7 +102,7 @@ export const useStore = create<AppState>()(
     },
     addOfficer: (officerData) => {
        const newOfficer: PoliceOfficer = {
-        ...officerData,
+        ...officerData, // functionalId here is now contact
         id: uuidv4(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -138,7 +138,7 @@ export const useStore = create<AppState>()(
       const equipmentDetails = loanData.equipmentIds.map(id => {
         const eq = get().equipments.find(e => e.id === id);
         if (!eq) throw new Error(`Equipamento com ID ${id} não encontrado.`);
-        if (eq.status !== 'Disponível') throw new Error(`Equipamento ${eq.brand} ${eq.model} (S/N: ${eq.serialNumber}) não está disponível.`);
+        if (eq.status !== 'Disponível') throw new Error(`Equipamento ${eq.brand} (Patrimônio: ${eq.serialNumber}) não está disponível.`);
         return eq;
       });
 
@@ -235,7 +235,7 @@ export const useStore = create<AppState>()(
         }
         
         const updatedUser = { ...state.users[userIndex], ...userData, updatedAt: new Date().toISOString() };
-        // Do not clear password if not provided
+        
         if (userData.password === "" || userData.password === undefined) {
           updatedUser.password = state.users[userIndex].password;
         }

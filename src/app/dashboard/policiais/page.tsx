@@ -18,9 +18,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { PoliceOfficerForm } from './components/police-officer-form';
 import { useStore } from '@/lib/store';
-import type { PoliceOfficer, Loan, Equipment } from '@/lib/types';
+import type { PoliceOfficer, Loan } from '@/lib/types';
 import { LoanStatus } from '@/lib/types';
-import { Shield, UserPlus, Edit3, IdCard, Award, Building, Trash2, Eye, Info, PackageSearch, CalendarDays, Clock } from 'lucide-react';
+import { Shield, UserPlus, Edit3, Award, Building, Trash2, Eye, Info, UserCircle, Mail, CalendarDays, Clock } from 'lucide-react'; // Added UserCircle, Mail
 import { useToast } from '@/hooks/use-toast';
 import { PoliceOfficerSchema } from '@/lib/schemas';
 import type { z } from 'zod';
@@ -50,12 +50,11 @@ export default function PoliciaisPage() {
     setIsSubmitting(true);
     try {
       if (editingOfficer) {
-        updateOfficer({ ...editingOfficer, ...values, functionalId: values.functionalId.toUpperCase() });
+        updateOfficer({ ...editingOfficer, ...values }); // functionalId is now contact, no toUpperCase
         toast({ title: "Policial Atualizado", description: `Os dados de ${values.name} foram atualizados.` });
       } else {
         const newOfficerData = {
-          ...values,
-          functionalId: values.functionalId.toUpperCase(),
+          ...values, 
         } as Omit<PoliceOfficer, 'id' | 'createdAt' | 'updatedAt'>;
         addOfficer(newOfficerData);
         toast({ title: "Policial Adicionado", description: `${values.name} foi adicionado ao sistema.` });
@@ -148,24 +147,20 @@ export default function PoliciaisPage() {
             <Card key={officer.id} className="flex flex-col">
               <CardHeader>
                 <div className="flex items-start justify-between mb-2">
-                  <IdCard className="h-8 w-8 text-primary" />
-                  {/* Status can be added later if needed, e.g., Ativo/Inativo */}
+                  <UserCircle className="h-8 w-8 text-primary" /> {/* Changed Icon */}
                 </div>
-                <CardTitle className="text-lg font-semibold font-headline">{officer.name}</CardTitle>
+                <CardTitle className="text-lg font-semibold font-headline">{officer.name}</CardTitle> {/* Name is Nome de Guerra */}
                 <CardDescription className="flex items-center text-sm">
                   <Award className="h-4 w-4 mr-2 text-muted-foreground" /> {officer.rank}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow space-y-1">
                 <p className="text-sm text-muted-foreground flex items-center">
-                  <IdCard className="h-4 w-4 mr-2 shrink-0" /> ID Funcional: <span className="font-medium text-foreground ml-1">{officer.functionalId}</span>
+                  <Mail className="h-4 w-4 mr-2 shrink-0" /> Contato: <span className="font-medium text-foreground ml-1">{officer.functionalId}</span> {/* functionalId is now Contato */}
                 </p>
                 <p className="text-sm text-muted-foreground flex items-center">
                   <Building className="h-4 w-4 mr-2 shrink-0" /> Unidade: <span className="font-medium text-foreground ml-1">{officer.unit}</span>
                 </p>
-                {officer.contact && (
-                  <p className="text-sm text-muted-foreground">Contato: <span className="font-medium text-foreground">{officer.contact}</span></p>
-                )}
                 {officer.observations && (
                   <p className="text-sm text-muted-foreground mt-2">Obs: {officer.observations}</p>
                 )}
@@ -212,13 +207,14 @@ export default function PoliciaisPage() {
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o policial <span className="font-semibold">{officerToDelete?.name} (ID: {officerToDelete?.functionalId})</span>? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir o policial <span className="font-semibold">{officerToDelete?.name}</span>?
+              {officerToDelete?.functionalId && <> O contato associado é <span className="font-semibold">{officerToDelete.functionalId}</span>.</>}
+              Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -228,12 +224,11 @@ export default function PoliciaisPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Officer Details Dialog */}
       <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle className="flex items-center">
-              <IdCard className="h-6 w-6 mr-2 text-primary" />
+              <UserCircle className="h-6 w-6 mr-2 text-primary" /> {/* Changed Icon */}
               Detalhes do Policial
             </DialogTitle>
             {selectedOfficerForDetails && (
@@ -248,11 +243,10 @@ export default function PoliciaisPage() {
                 <div>
                   <h3 className="text-lg font-semibold mb-2 font-headline">Informações Pessoais</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                    <p><strong className="text-muted-foreground">Nome:</strong> {selectedOfficerForDetails.name}</p>
+                    <p><strong className="text-muted-foreground">Nome de Guerra:</strong> {selectedOfficerForDetails.name}</p>
                     <p><strong className="text-muted-foreground">Posto/Grad.:</strong> {selectedOfficerForDetails.rank}</p>
-                    <p><strong className="text-muted-foreground">ID Funcional:</strong> {selectedOfficerForDetails.functionalId}</p>
+                    <p><strong className="text-muted-foreground">Contato:</strong> {selectedOfficerForDetails.functionalId}</p> {/* Changed Label */}
                     <p><strong className="text-muted-foreground">Unidade:</strong> {selectedOfficerForDetails.unit}</p>
-                    {selectedOfficerForDetails.contact && <p><strong className="text-muted-foreground">Contato:</strong> {selectedOfficerForDetails.contact}</p>}
                     {selectedOfficerForDetails.observations && <p className="md:col-span-2"><strong className="text-muted-foreground">Observações:</strong> {selectedOfficerForDetails.observations}</p>}
                      <p className="text-xs text-muted-foreground md:col-span-2">Cadastrado em: {format(parseISO(selectedOfficerForDetails.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
                   </div>

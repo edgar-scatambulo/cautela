@@ -9,9 +9,9 @@ export interface Equipment {
   id: string;
   type: EquipmentType;
   brand: string;
-  model?: string; // Made model optional
-  serialNumber: string;
-  patrimonyNumber?: string; // Número de patrimônio
+  model?: string; 
+  serialNumber: string; // "Patrimônio" on UI
+  patrimonyNumber?: string; 
   status: 'Disponível' | 'Em Cautela' | 'Manutenção' | 'Baixado';
   observations?: string;
   createdAt: string; // ISO Date string
@@ -28,8 +28,8 @@ export interface SystemUser {
   name: string;
   email: string;
   role: UserRole;
-  username: string; // For login
-  password?: string; // Plain text password for simplicity in this example
+  username: string; 
+  password?: string; 
   isActive: boolean;
   createdAt: string; // ISO Date string
   updatedAt: string; // ISO Date string
@@ -37,11 +37,10 @@ export interface SystemUser {
 
 export interface PoliceOfficer {
   id:string;
-  name: string;
-  functionalId: string; // Identificação Funcional (Matrícula)
+  name: string; // "Nome de Guerra" on UI
+  functionalId: string; // "Contato" on UI (formerly ID Funcional)
   rank: string; // Graduação/Posto
   unit: string; // Unidade/Setor
-  contact?: string;
   observations?: string;
   createdAt: string; // ISO Date string
   updatedAt: string; // ISO Date string
@@ -54,13 +53,13 @@ export enum LoanStatus {
 
 export interface LoanItem {
   equipmentId: string;
-  quantity: number; // For items that might be loaned in multiples if not individually tracked by S/N
+  quantity: number; 
 }
 
 export interface Loan {
   id: string;
   officerId: string; // PoliceOfficer ID
-  equipment: Equipment[]; // Array of Equipment objects or IDs
+  equipment: Equipment[]; 
   loanDate: string; // ISO Date string for when it was loaned out
   loanTime: string; // HH:MM
   expectedReturnDate?: string; // ISO Date string

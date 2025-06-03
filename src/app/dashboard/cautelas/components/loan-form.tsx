@@ -38,7 +38,7 @@ interface LoanFormProps {
   onSubmit: (values: z.infer<typeof LoanSchema>) => void;
   defaultValues?: Partial<z.infer<typeof LoanSchema>>;
   officers: PoliceOfficer[];
-  availableEquipments: Equipment[]; // Equipments with status 'Disponível'
+  availableEquipments: Equipment[]; 
   isSubmitting?: boolean;
 }
 
@@ -73,7 +73,7 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
                 <SelectContent>
                   {officers.map((officer) => (
                     <SelectItem key={officer.id} value={officer.id}>
-                      {officer.name} - {officer.rank} ({officer.functionalId})
+                      {officer.name} - {officer.rank} {/* Display name (Nome de Guerra) and rank */}
                     </SelectItem>
                   ))}
                 </SelectContent>
