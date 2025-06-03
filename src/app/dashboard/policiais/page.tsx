@@ -6,31 +6,39 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { PoliceOfficerForm } from './components/police-officer-form';
 import { useStore } from '@/lib/store';
 import type { PoliceOfficer } from '@/lib/types';
-import { Shield, UserPlus, Edit3, IdCard, Award, Building } from 'lucide-react';
+import { Shield, UserPlus, Edit3, IdCard, Award, Building, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PoliceOfficerSchema } from '@/lib/schemas';
 import type { z } from 'zod';
 
 export default function PoliciaisPage() {
-  const { officers, addOfficer, updateOfficer } = useStore(); // Assuming updateOfficer will be added to store
+  const { officers, addOfficer, updateOfficer, deleteOfficer } = useStore();
   const { toast } = useToast();
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingOfficer, setEditingOfficer] = React.useState<PoliceOfficer | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [officerToDelete, setOfficerToDelete] = React.useState<PoliceOfficer | null>(null);
 
   const handleFormSubmit = async (values: z.infer<typeof PoliceOfficerSchema>) => {
     setIsSubmitting(true);
     try {
       if (editingOfficer) {
-        // updateOfficer({ ...editingOfficer, ...values });
-        // toast({ title: "Policial Atualizado", description: `Os dados de ${values.name} foram atualizados.` });
-        // For now, just log, as updateOfficer is not implemented in store
-        console.log("Update officer:", { ...editingOfficer, ...values });
-        toast({ title: "Funcionalidade Pendente", description: "A atualização de policiais ainda será implementada." });
-
+        updateOfficer({ ...editingOfficer, ...values, functionalId: values.functionalId.toUpperCase() });
+        toast({ title: "Policial Atualizado", description: `Os dados de ${values.name} foram atualizados.` });
       } else {
         const newOfficerData = {
           ...values,
@@ -39,7 +47,7 @@ export default function PoliciaisPage() {
         addOfficer(newOfficerData);
         toast({ title: "Policial Adicionado", description: `${values.name} foi adicionado ao sistema.` });
       }
-      setIsDialogOpen(false);
+      setIsFormDialogOpen(false);
       setEditingOfficer(undefined);
     } catch (error: any) {
       toast({ title: "Erro", description: error.message || "Ocorreu um erro ao salvar o policial.", variant: "destructive" });
@@ -50,13 +58,32 @@ export default function PoliciaisPage() {
 
   const openEditDialog = (officer: PoliceOfficer) => {
     setEditingOfficer(officer);
-    setIsDialogOpen(true);
+    setIsFormDialogOpen(true);
   };
   
   const openAddDialog = () => {
     setEditingOfficer(undefined);
-    setIsDialogOpen(true);
+    setIsFormDialogOpen(true);
   }
+
+  const openDeleteDialog = (officer: PoliceOfficer) => {
+    setOfficerToDelete(officer);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (officerToDelete) {
+      try {
+        deleteOfficer(officerToDelete.id);
+        toast({ title: "Policial Excluído", description: `O policial ${officerToDelete.name} foi excluído.` });
+      } catch (error: any) {
+         toast({ title: "Erro ao Excluir", description: error.message, variant: "destructive" });
+      } finally {
+        setIsDeleteDialogOpen(false);
+        setOfficerToDelete(null);
+      }
+    }
+  };
 
   return (
     <>
@@ -65,7 +92,7 @@ export default function PoliciaisPage() {
         description="Cadastre, visualize e edite os dados dos policiais."
         icon={Shield}
         actions={
-          <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) setEditingOfficer(undefined); }}>
+          <Dialog open={isFormDialogOpen} onOpenChange={(open) => { setIsFormDialogOpen(open); if(!open) setEditingOfficer(undefined); }}>
             <DialogTrigger asChild>
               <Button onClick={openAddDialog}>
                 <UserPlus className="mr-2 h-4 w-4" /> Adicionar Policial
@@ -124,16 +151,34 @@ export default function PoliciaisPage() {
               </CardContent>
               <CardFooter className="border-t pt-4">
                 <div className="flex w-full justify-end space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => openEditDialog(officer)} disabled> {/* Editing disabled for now */}
+                  <Button variant="outline" size="sm" onClick={() => openEditDialog(officer)}>
                     <Edit3 className="mr-1 h-4 w-4" /> Editar
                   </Button>
-                  {/* Delete functionality can be added here later */}
+                  <Button variant="destructive" size="sm" onClick={() => openDeleteDialog(officer)}>
+                    <Trash2 className="mr-1 h-4 w-4" /> Excluir
+                  </Button>
                 </div>
               </CardFooter>
             </Card>
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o policial <span className="font-semibold">{officerToDelete?.name} (ID: {officerToDelete?.functionalId})</span>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setOfficerToDelete(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

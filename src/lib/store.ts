@@ -20,6 +20,8 @@ interface AppState {
   updateEquipment: (equipment: Equipment) => void;
   deleteEquipment: (equipmentId: string) => void;
   addOfficer: (officer: Omit<PoliceOfficer, 'id' | 'createdAt' | 'updatedAt'>) => PoliceOfficer;
+  updateOfficer: (officer: PoliceOfficer) => void;
+  deleteOfficer: (officerId: string) => void;
   addLoan: (loan: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'loanedByUserId' | 'equipment'> & { equipmentIds: string[] }) => Loan;
   updateLoanStatus: (loanId: string, status: LoanStatus, returnDate?: string, returnTime?: string, returnObservation?: string, returnedToUserId?: string) => void;
 }
@@ -81,15 +83,12 @@ export const useStore = create<AppState>()(
     },
     deleteEquipment: (equipmentId) => {
       set((state) => {
-        // Check if the equipment is in any active loan
         const isActiveLoan = state.loans.some(loan => 
           loan.equipment.some(eq => eq.id === equipmentId) && loan.status === LoanStatus.ENTREGUE
         );
-
         if (isActiveLoan) {
           throw new Error("Equipamento não pode ser excluído pois está em uma cautela ativa.");
         }
-        
         state.equipments = state.equipments.filter(e => e.id !== equipmentId);
       });
     },
@@ -104,6 +103,25 @@ export const useStore = create<AppState>()(
         state.officers.push(newOfficer);
       });
       return newOfficer;
+    },
+    updateOfficer: (updatedOfficer) => {
+      set((state) => {
+        const index = state.officers.findIndex(o => o.id === updatedOfficer.id);
+        if (index !== -1) {
+          state.officers[index] = { ...updatedOfficer, updatedAt: new Date().toISOString() };
+        }
+      });
+    },
+    deleteOfficer: (officerId) => {
+      set((state) => {
+        const isActiveLoan = state.loans.some(loan => 
+          loan.officerId === officerId && loan.status === LoanStatus.ENTREGUE
+        );
+        if (isActiveLoan) {
+          throw new Error("Policial não pode ser excluído pois está vinculado a uma cautela ativa.");
+        }
+        state.officers = state.officers.filter(o => o.id !== officerId);
+      });
     },
     addLoan: (loanData) => {
       const currentUser = get().currentUser;
@@ -131,7 +149,6 @@ export const useStore = create<AppState>()(
       };
       set((state) => {
         state.loans.push(newLoan);
-        // Update equipment status
         loanData.equipmentIds.forEach(eqId => {
           const equipmentIndex = state.equipments.findIndex(e => e.id === eqId);
           if (equipmentIndex !== -1) {
@@ -153,8 +170,6 @@ export const useStore = create<AppState>()(
             state.loans[loanIndex].actualReturnTime = returnTime || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit'});
             state.loans[loanIndex].returnObservation = returnObservation;
             state.loans[loanIndex].returnedToUserId = returnedToUserId || get().currentUser?.id;
-
-            // Update equipment status back to 'Disponível'
             state.loans[loanIndex].equipment.forEach(eq => {
               const equipmentIndex = state.equipments.findIndex(e => e.id === eq.id);
               if (equipmentIndex !== -1) {
@@ -169,7 +184,6 @@ export const useStore = create<AppState>()(
   }))
 );
 
-// Helper component to provide store (though not strictly necessary with Zustand v4)
 export const AppStateProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   return children;
 };
