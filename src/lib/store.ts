@@ -102,7 +102,7 @@ export const useStore = create<AppState>()(
     },
     addOfficer: (officerData) => {
        const newOfficer: PoliceOfficer = {
-        ...officerData, // functionalId here is now contact
+        ...officerData, 
         id: uuidv4(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

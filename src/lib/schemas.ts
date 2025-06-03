@@ -33,7 +33,7 @@ export const PoliceOfficerSchema = z.object({
   name: z.string().min(1, "Nome de Guerra é obrigatório."), // Changed label
   functionalId: z.string().min(1, "Contato é obrigatório."), // Changed label and purpose
   rank: z.string().min(1, "Posto/Graduação é obrigatório."),
-  unit: z.string().min(1, "Unidade é obrigatória."),
+  unit: z.string().optional(), // Now optional
   observations: z.string().optional(),
 });
 

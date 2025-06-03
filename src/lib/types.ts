@@ -8,7 +8,7 @@ export enum EquipmentType {
 export interface Equipment {
   id: string;
   type: EquipmentType;
-  brand: string;
+  brand: string; // "Marca / Modelo" on UI
   model?: string; 
   serialNumber: string; // "Patrimônio" on UI
   patrimonyNumber?: string; 
@@ -40,7 +40,7 @@ export interface PoliceOfficer {
   name: string; // "Nome de Guerra" on UI
   functionalId: string; // "Contato" on UI (formerly ID Funcional)
   rank: string; // Graduação/Posto
-  unit: string; // Unidade/Setor
+  unit?: string; // Unidade/Setor - Now optional
   observations?: string;
   createdAt: string; // ISO Date string
   updatedAt: string; // ISO Date string

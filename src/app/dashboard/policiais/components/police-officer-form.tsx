@@ -14,7 +14,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { PoliceOfficerSchema } from "@/lib/schemas";
 import type { PoliceOfficer } from "@/lib/types";
 
@@ -31,8 +30,8 @@ export function PoliceOfficerForm({ onSubmit, defaultValues, isSubmitting }: Pol
       name: defaultValues?.name || "", // Will be "Nome de Guerra"
       functionalId: defaultValues?.functionalId || "", // Will be "Contato"
       rank: defaultValues?.rank || "",
-      unit: defaultValues?.unit || "",
-      observations: defaultValues?.observations || "",
+      unit: defaultValues?.unit || "", // Remains for existing data, but not in form
+      observations: defaultValues?.observations || "", // Remains for existing data, but not in form
     },
   });
 
@@ -83,32 +82,7 @@ export function PoliceOfficerForm({ onSubmit, defaultValues, isSubmitting }: Pol
             )}
           />
         </div>
-        <FormField
-          control={form.control}
-          name="unit"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Unidade/Setor</FormLabel>
-              <FormControl>
-                <Input placeholder="Ex: 1º BPM, ROTAM, Inteligência" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="observations"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Observações (Opcional)</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Informações adicionais sobre o policial" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+       
         <div className="flex justify-end pt-4">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (defaultValues?.id ? "Salvando..." : "Adicionando...") : (defaultValues?.id ? "Salvar Alterações" : "Adicionar Policial")}

@@ -20,7 +20,7 @@ import { PoliceOfficerForm } from './components/police-officer-form';
 import { useStore } from '@/lib/store';
 import type { PoliceOfficer, Loan } from '@/lib/types';
 import { LoanStatus } from '@/lib/types';
-import { Shield, UserPlus, Edit3, Award, Building, Trash2, Eye, Info, UserCircle, Mail, CalendarDays, Clock } from 'lucide-react'; // Added UserCircle, Mail
+import { Shield, UserPlus, Edit3, Award, Trash2, Eye, Info, UserCircle, Mail, CalendarDays } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PoliceOfficerSchema } from '@/lib/schemas';
 import type { z } from 'zod';
@@ -50,7 +50,7 @@ export default function PoliciaisPage() {
     setIsSubmitting(true);
     try {
       if (editingOfficer) {
-        updateOfficer({ ...editingOfficer, ...values }); // functionalId is now contact, no toUpperCase
+        updateOfficer({ ...editingOfficer, ...values }); 
         toast({ title: "Policial Atualizado", description: `Os dados de ${values.name} foram atualizados.` });
       } else {
         const newOfficerData = {
@@ -147,20 +147,22 @@ export default function PoliciaisPage() {
             <Card key={officer.id} className="flex flex-col">
               <CardHeader>
                 <div className="flex items-start justify-between mb-2">
-                  <UserCircle className="h-8 w-8 text-primary" /> {/* Changed Icon */}
+                  <UserCircle className="h-8 w-8 text-primary" /> 
                 </div>
-                <CardTitle className="text-lg font-semibold font-headline">{officer.name}</CardTitle> {/* Name is Nome de Guerra */}
+                <CardTitle className="text-lg font-semibold font-headline">{officer.name}</CardTitle> 
                 <CardDescription className="flex items-center text-sm">
                   <Award className="h-4 w-4 mr-2 text-muted-foreground" /> {officer.rank}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow space-y-1">
                 <p className="text-sm text-muted-foreground flex items-center">
-                  <Mail className="h-4 w-4 mr-2 shrink-0" /> Contato: <span className="font-medium text-foreground ml-1">{officer.functionalId}</span> {/* functionalId is now Contato */}
+                  <Mail className="h-4 w-4 mr-2 shrink-0" /> Contato: <span className="font-medium text-foreground ml-1">{officer.functionalId}</span>
                 </p>
-                <p className="text-sm text-muted-foreground flex items-center">
-                  <Building className="h-4 w-4 mr-2 shrink-0" /> Unidade: <span className="font-medium text-foreground ml-1">{officer.unit}</span>
-                </p>
+                {officer.unit && (
+                  <p className="text-sm text-muted-foreground flex items-center">
+                     Unidade: <span className="font-medium text-foreground ml-1">{officer.unit}</span>
+                  </p>
+                )}
                 {officer.observations && (
                   <p className="text-sm text-muted-foreground mt-2">Obs: {officer.observations}</p>
                 )}
@@ -228,7 +230,7 @@ export default function PoliciaisPage() {
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle className="flex items-center">
-              <UserCircle className="h-6 w-6 mr-2 text-primary" /> {/* Changed Icon */}
+              <UserCircle className="h-6 w-6 mr-2 text-primary" /> 
               Detalhes do Policial
             </DialogTitle>
             {selectedOfficerForDetails && (
@@ -245,8 +247,8 @@ export default function PoliciaisPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
                     <p><strong className="text-muted-foreground">Nome de Guerra:</strong> {selectedOfficerForDetails.name}</p>
                     <p><strong className="text-muted-foreground">Posto/Grad.:</strong> {selectedOfficerForDetails.rank}</p>
-                    <p><strong className="text-muted-foreground">Contato:</strong> {selectedOfficerForDetails.functionalId}</p> {/* Changed Label */}
-                    <p><strong className="text-muted-foreground">Unidade:</strong> {selectedOfficerForDetails.unit}</p>
+                    <p><strong className="text-muted-foreground">Contato:</strong> {selectedOfficerForDetails.functionalId}</p>
+                    {selectedOfficerForDetails.unit && <p><strong className="text-muted-foreground">Unidade:</strong> {selectedOfficerForDetails.unit}</p>}
                     {selectedOfficerForDetails.observations && <p className="md:col-span-2"><strong className="text-muted-foreground">Observações:</strong> {selectedOfficerForDetails.observations}</p>}
                      <p className="text-xs text-muted-foreground md:col-span-2">Cadastrado em: {format(parseISO(selectedOfficerForDetails.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
                   </div>
