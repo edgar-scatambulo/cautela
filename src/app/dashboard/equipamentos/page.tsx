@@ -28,7 +28,7 @@ import { ptBR } from 'date-fns/locale';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
 const EquipmentIcon = ({ type }: { type: EquipmentType }) => {
   switch (type) {
@@ -67,16 +67,18 @@ export default function EquipamentosPage() {
     setIsSubmitting(true);
     try {
       if (editingEquipment) {
-        updateEquipment({ ...editingEquipment, ...values, serialNumber: values.serialNumber.toUpperCase() });
-        toast({ title: "Equipamento Atualizado", description: `O equipamento ${values.model} foi atualizado.` });
+        // For updates, ensure existing model isn't wiped if not in form values
+        const updatedValues = { ...editingEquipment, ...values };
+        updateEquipment({ ...updatedValues, serialNumber: values.serialNumber.toUpperCase() });
+        toast({ title: "Equipamento Atualizado", description: `O equipamento ${values.brand}${values.model ? ` ${values.model}` : ''} foi atualizado.` });
       } else {
         const newEquipmentData = {
           ...values,
           serialNumber: values.serialNumber.toUpperCase(),
           status: values.status || 'Disponível',
-        } as Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>;
+        } as Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>; // Model will be optional from schema
         addEquipment(newEquipmentData);
-        toast({ title: "Equipamento Adicionado", description: `O equipamento ${values.model} foi adicionado.` });
+        toast({ title: "Equipamento Adicionado", description: `O equipamento ${values.brand}${values.model ? ` ${values.model}` : ''} foi adicionado.` });
       }
       setIsFormDialogOpen(false);
       setEditingEquipment(undefined);
@@ -106,7 +108,7 @@ export default function EquipamentosPage() {
     if (equipmentToDelete) {
       try {
         deleteEquipment(equipmentToDelete.id);
-        toast({ title: "Equipamento Excluído", description: `O equipamento ${equipmentToDelete.model} foi excluído.` });
+        toast({ title: "Equipamento Excluído", description: `O equipamento ${equipmentToDelete.brand}${equipmentToDelete.model ? ` ${equipmentToDelete.model}` : ''} foi excluído.` });
       } catch (error: any) {
          toast({ title: "Erro ao Excluir", description: error.message, variant: "destructive" });
       } finally {
@@ -125,7 +127,7 @@ export default function EquipamentosPage() {
   };
 
   return (
-    <>
+    <TooltipProvider>
       <PageHeader
         title="Gerenciamento de Equipamentos"
         description="Cadastre, visualize e edite os equipamentos."
@@ -176,7 +178,7 @@ export default function EquipamentosPage() {
                     {equipment.status}
                   </Badge>
                 </div>
-                <CardTitle className="text-lg font-semibold font-headline">{equipment.brand} {equipment.model}</CardTitle>
+                <CardTitle className="text-lg font-semibold font-headline">{equipment.brand}{equipment.model ? ` ${equipment.model}` : ''}</CardTitle>
                 <CardDescription>Tipo: {equipment.type}</CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
@@ -232,7 +234,7 @@ export default function EquipamentosPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o equipamento <span className="font-semibold">{equipmentToDelete?.brand} {equipmentToDelete?.model} (S/N: {equipmentToDelete?.serialNumber})</span>? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir o equipamento <span className="font-semibold">{equipmentToDelete?.brand}{equipmentToDelete?.model ? ` ${equipmentToDelete.model}` : ''} (S/N: {equipmentToDelete?.serialNumber})</span>? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -252,7 +254,7 @@ export default function EquipamentosPage() {
             </DialogTitle>
             {selectedEquipmentForDetails && (
                  <DialogDescription>
-                    {selectedEquipmentForDetails.brand} {selectedEquipmentForDetails.model} (S/N: {selectedEquipmentForDetails.serialNumber})
+                    {selectedEquipmentForDetails.brand}{selectedEquipmentForDetails.model ? ` ${selectedEquipmentForDetails.model}` : ''} (S/N: {selectedEquipmentForDetails.serialNumber})
                 </DialogDescription>
             )}
           </DialogHeader>
@@ -264,7 +266,7 @@ export default function EquipamentosPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
                     <p><strong className="text-muted-foreground">Tipo:</strong> {selectedEquipmentForDetails.type}</p>
                     <p><strong className="text-muted-foreground">Marca:</strong> {selectedEquipmentForDetails.brand}</p>
-                    <p><strong className="text-muted-foreground">Modelo:</strong> {selectedEquipmentForDetails.model}</p>
+                    {selectedEquipmentForDetails.model && <p><strong className="text-muted-foreground">Modelo:</strong> {selectedEquipmentForDetails.model}</p>}
                     <p><strong className="text-muted-foreground">S/N:</strong> {selectedEquipmentForDetails.serialNumber}</p>
                     {selectedEquipmentForDetails.patrimonyNumber && <p><strong className="text-muted-foreground">Patrimônio:</strong> {selectedEquipmentForDetails.patrimonyNumber}</p>}
                     <p><strong className="text-muted-foreground">Status Atual:</strong> <Badge className={`${
@@ -326,8 +328,7 @@ export default function EquipamentosPage() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </TooltipProvider>
   );
 }
     
-

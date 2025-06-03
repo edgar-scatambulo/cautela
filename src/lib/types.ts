@@ -9,7 +9,7 @@ export interface Equipment {
   id: string;
   type: EquipmentType;
   brand: string;
-  model: string;
+  model?: string; // Made model optional
   serialNumber: string;
   patrimonyNumber?: string; // Número de patrimônio
   status: 'Disponível' | 'Em Cautela' | 'Manutenção' | 'Baixado';

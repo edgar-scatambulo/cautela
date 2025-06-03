@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 import { EquipmentType, UserRole } from './types';
 
@@ -10,7 +11,7 @@ export const EquipmentSchema = z.object({
   id: z.string().optional(),
   type: z.nativeEnum(EquipmentType, { errorMap: () => ({ message: "Tipo de equipamento é obrigatório."}) }),
   brand: z.string().min(1, "Marca é obrigatória."),
-  model: z.string().min(1, "Modelo é obrigatório."),
+  model: z.string().optional(), // Made model optional
   serialNumber: z.string().min(1, "Número de série é obrigatório.").toUpperCase(),
   patrimonyNumber: z.string().optional(),
   status: z.enum(['Disponível', 'Em Cautela', 'Manutenção', 'Baixado']),

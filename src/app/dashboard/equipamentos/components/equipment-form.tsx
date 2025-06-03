@@ -37,18 +37,12 @@ export function EquipmentForm({ onSubmit, defaultValues, isSubmitting }: Equipme
     defaultValues: {
       type: defaultValues?.type || undefined,
       brand: defaultValues?.brand || "",
-      model: defaultValues?.model || "",
+      // model field removed from form default values
       serialNumber: defaultValues?.serialNumber || "",
       status: defaultValues?.status || "Disponível",
       observations: defaultValues?.observations || "",
-      // patrimonyNumber is intentionally omitted here as per user request for form removal
     },
   });
-
-  // If defaultValues contains patrimonyNumber, ensure it's part of the form submission if not edited out
-  // This is more relevant if the field was just hidden and not fully removed from schema/type for existing data
-  // However, since the request is to remove from form, we assume it won't be part of new submissions
-  // or updates via this form unless explicitly handled.
 
   return (
     <Form {...form}>
@@ -77,34 +71,20 @@ export function EquipmentForm({ onSubmit, defaultValues, isSubmitting }: Equipme
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="brand"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Marca</FormLabel>
-                <FormControl>
-                  <Input placeholder="Ex: Samsung, Motorola" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="model"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Modelo</FormLabel>
-                <FormControl>
-                  <Input placeholder="Ex: Galaxy S23, APX6000" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="brand"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Marca</FormLabel>
+              <FormControl>
+                <Input placeholder="Ex: Samsung, Motorola" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        {/* Model FormField removed */}
         <FormField
           control={form.control}
           name="serialNumber"
