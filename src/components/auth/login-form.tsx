@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,8 +37,22 @@ export function LoginForm() {
   function onSubmit(values: z.infer<typeof LoginSchema>) {
     // Mock authentication
     const foundUser = users.find(u => u.username === values.username);
-    // In a real app, you'd hash and compare the password
-    if (foundUser && values.password === "password") { // Mock password check
+    
+    let allowLogin = false;
+    if (foundUser) {
+      if (foundUser.username === 'admin') {
+        // Check for the admin user with the new password
+        if (values.password === "tricolor") {
+          allowLogin = true;
+        }
+      }
+      // Future: Add logic for other users if necessary
+      // else if (values.password === "some_other_password_for_other_users") {
+      //   allowLogin = true;
+      // }
+    }
+
+    if (allowLogin && foundUser) {
       login(foundUser);
       toast({
         title: "Login bem-sucedido!",
