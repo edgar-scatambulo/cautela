@@ -1,3 +1,4 @@
+
 export enum EquipmentType {
   CELULAR = 'Celular',
   IMPRESSORA = 'Impressora',
@@ -28,6 +29,7 @@ export interface SystemUser {
   email: string;
   role: UserRole;
   username: string; // For login
+  password?: string; // Plain text password for simplicity in this example
   isActive: boolean;
   createdAt: string; // ISO Date string
   updatedAt: string; // ISO Date string

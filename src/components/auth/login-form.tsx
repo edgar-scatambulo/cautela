@@ -35,24 +35,11 @@ export function LoginForm() {
   });
 
   function onSubmit(values: z.infer<typeof LoginSchema>) {
-    // Mock authentication
-    const foundUser = users.find(u => u.username === values.username);
-    
-    let allowLogin = false;
-    if (foundUser) {
-      if (foundUser.username === 'admin') {
-        // Check for the admin user with the new password
-        if (values.password === "tricolor") {
-          allowLogin = true;
-        }
-      }
-      // Future: Add logic for other users if necessary
-      // else if (values.password === "some_other_password_for_other_users") {
-      //   allowLogin = true;
-      // }
-    }
+    const foundUser = users.find(
+      (u) => u.username === values.username && u.password === values.password && u.isActive
+    );
 
-    if (allowLogin && foundUser) {
+    if (foundUser) {
       login(foundUser);
       toast({
         title: "Login bem-sucedido!",
@@ -62,7 +49,7 @@ export function LoginForm() {
     } else {
       toast({
         title: "Erro de Login",
-        description: "Nome de usuário ou senha inválidos.",
+        description: "Nome de usuário, senha inválidos ou usuário inativo.",
         variant: "destructive",
       });
     }

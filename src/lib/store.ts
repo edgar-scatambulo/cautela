@@ -16,14 +16,21 @@ interface AppState {
 
   login: (user: SystemUser) => void;
   logout: () => void;
+
   addEquipment: (equipment: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => Equipment;
   updateEquipment: (equipment: Equipment) => void;
   deleteEquipment: (equipmentId: string) => void;
+
   addOfficer: (officer: Omit<PoliceOfficer, 'id' | 'createdAt' | 'updatedAt'>) => PoliceOfficer;
   updateOfficer: (officer: PoliceOfficer) => void;
   deleteOfficer: (officerId: string) => void;
+
   addLoan: (loan: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'loanedByUserId' | 'equipment'> & { equipmentIds: string[] }) => Loan;
   updateLoanStatus: (loanId: string, status: LoanStatus, returnDate?: string, returnTime?: string, returnObservation?: string, returnedToUserId?: string) => void;
+
+  addUser: (userData: Omit<SystemUser, 'id' | 'createdAt' | 'updatedAt'>) => SystemUser;
+  updateUser: (userData: Partial<SystemUser> & { id: string }) => void;
+  deleteUser: (userId: string) => void;
 }
 
 const initialAdminUser: SystemUser = {
@@ -31,6 +38,7 @@ const initialAdminUser: SystemUser = {
   name: 'Admin User',
   email: 'admin@cautela.com',
   username: 'admin',
+  password: 'tricolor', // Added password
   role: UserRole.ADMIN,
   isActive: true,
   createdAt: new Date().toISOString(),
@@ -77,7 +85,7 @@ export const useStore = create<AppState>()(
       set((state) => {
         const index = state.equipments.findIndex(e => e.id === updatedEquipment.id);
         if (index !== -1) {
-          state.equipments[index] = { ...updatedEquipment, updatedAt: new Date().toISOString() };
+          state.equipments[index] = { ...state.equipments[index], ...updatedEquipment, updatedAt: new Date().toISOString() };
         }
       });
     },
@@ -108,7 +116,7 @@ export const useStore = create<AppState>()(
       set((state) => {
         const index = state.officers.findIndex(o => o.id === updatedOfficer.id);
         if (index !== -1) {
-          state.officers[index] = { ...updatedOfficer, updatedAt: new Date().toISOString() };
+          state.officers[index] = { ...state.officers[index], ...updatedOfficer, updatedAt: new Date().toISOString() };
         }
       });
     },
@@ -179,6 +187,78 @@ export const useStore = create<AppState>()(
             });
           }
         }
+      });
+    },
+
+    addUser: (userData) => {
+      if (!userData.password) {
+        throw new Error("Senha é obrigatória para novos usuários.");
+      }
+      const existingUserByUsername = get().users.find(u => u.username === userData.username);
+      if (existingUserByUsername) {
+        throw new Error(`Nome de usuário "${userData.username}" já existe.`);
+      }
+      const existingUserByEmail = get().users.find(u => u.email === userData.email);
+      if (existingUserByEmail) {
+        throw new Error(`Email "${userData.email}" já está em uso.`);
+      }
+      
+      const newUser: SystemUser = {
+        ...userData,
+        id: uuidv4(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      set(state => {
+        state.users.push(newUser);
+      });
+      return newUser;
+    },
+    updateUser: (userData) => {
+      set(state => {
+        const userIndex = state.users.findIndex(u => u.id === userData.id);
+        if (userIndex === -1) {
+          throw new Error("Usuário não encontrado para atualização.");
+        }
+
+        if (userData.username && userData.username !== state.users[userIndex].username) {
+          const existingUserByUsername = state.users.find(u => u.username === userData.username && u.id !== userData.id);
+          if (existingUserByUsername) {
+            throw new Error(`Nome de usuário "${userData.username}" já existe.`);
+          }
+        }
+        if (userData.email && userData.email !== state.users[userIndex].email) {
+          const existingUserByEmail = state.users.find(u => u.email === userData.email && u.id !== userData.id);
+          if (existingUserByEmail) {
+            throw new Error(`Email "${userData.email}" já está em uso.`);
+          }
+        }
+        
+        const updatedUser = { ...state.users[userIndex], ...userData, updatedAt: new Date().toISOString() };
+        // Do not clear password if not provided
+        if (userData.password === "" || userData.password === undefined) {
+          updatedUser.password = state.users[userIndex].password;
+        }
+        
+        state.users[userIndex] = updatedUser;
+      });
+    },
+    deleteUser: (userId) => {
+      set(state => {
+        if (state.currentUser?.id === userId) {
+          throw new Error("Você não pode excluir sua própria conta.");
+        }
+        const userToDelete = state.users.find(u => u.id === userId);
+        if (!userToDelete) {
+          throw new Error("Usuário não encontrado para exclusão.");
+        }
+        if (userToDelete.role === UserRole.ADMIN) {
+          const adminCount = state.users.filter(u => u.role === UserRole.ADMIN && u.isActive).length;
+          if (adminCount <= 1) {
+            throw new Error("Não é possível excluir o último administrador ativo do sistema.");
+          }
+        }
+        state.users = state.users.filter(u => u.id !== userId);
       });
     },
   }))
