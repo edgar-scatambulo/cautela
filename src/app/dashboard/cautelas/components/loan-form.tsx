@@ -50,7 +50,7 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
       equipmentIds: defaultValues?.equipmentIds || [],
       loanDate: defaultValues?.loanDate || format(new Date(), "yyyy-MM-dd"),
       loanTime: defaultValues?.loanTime || format(new Date(), "HH:mm"),
-      expectedReturnDate: defaultValues?.expectedReturnDate || "",
+      // expectedReturnDate: defaultValues?.expectedReturnDate || "", // Campo removido
       loanObservation: defaultValues?.loanObservation || "",
     },
   });
@@ -204,43 +204,7 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
           />
         </div>
 
-        <FormField
-          control={form.control}
-          name="expectedReturnDate"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Data Prev. Devolução (Opcional)</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value ? (
-                        format(new Date(field.value), "PPP", { locale: ptBR })
-                      ) : (
-                        <span>Escolha uma data</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value ? new Date(field.value) : undefined}
-                    onSelect={(date) => field.onChange(date ? format(date, "yyyy-MM-dd") : "")}
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Campo expectedReturnDate removido daqui */}
 
         <FormField
           control={form.control}
