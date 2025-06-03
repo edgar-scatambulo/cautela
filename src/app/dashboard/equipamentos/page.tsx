@@ -28,6 +28,7 @@ import { ptBR } from 'date-fns/locale';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const EquipmentIcon = ({ type }: { type: EquipmentType }) => {
   switch (type) {
@@ -185,15 +186,39 @@ export default function EquipamentosPage() {
               </CardContent>
               <CardFooter className="border-t pt-4">
                 <div className="flex w-full justify-end space-x-2">
-                  <Button variant="ghost" size="sm" onClick={() => openDetailsDialog(equipment)} className="text-primary hover:bg-primary/10">
-                    <Eye className="mr-1 h-4 w-4" /> Ver Detalhes
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => openEditDialog(equipment)}>
-                    <Edit3 className="mr-1 h-4 w-4" /> Editar
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => openDeleteDialog(equipment)}>
-                    <Trash2 className="mr-1 h-4 w-4" /> Excluir
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" onClick={() => openDetailsDialog(equipment)} className="text-primary hover:bg-primary/10">
+                        <Eye className="h-4 w-4" />
+                        <span className="sr-only">Ver Detalhes</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Ver Detalhes</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon" onClick={() => openEditDialog(equipment)}>
+                        <Edit3 className="h-4 w-4" />
+                        <span className="sr-only">Editar</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Editar</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="destructive" size="icon" onClick={() => openDeleteDialog(equipment)}>
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Excluir</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Excluir</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </CardFooter>
             </Card>
