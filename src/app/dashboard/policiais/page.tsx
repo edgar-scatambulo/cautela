@@ -5,7 +5,7 @@ import * as React from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,20 +18,33 @@ import {
 } from "@/components/ui/alert-dialog";
 import { PoliceOfficerForm } from './components/police-officer-form';
 import { useStore } from '@/lib/store';
-import type { PoliceOfficer } from '@/lib/types';
-import { Shield, UserPlus, Edit3, IdCard, Award, Building, Trash2 } from 'lucide-react';
+import type { PoliceOfficer, Loan, Equipment } from '@/lib/types';
+import { LoanStatus } from '@/lib/types';
+import { Shield, UserPlus, Edit3, IdCard, Award, Building, Trash2, Eye, Info, PackageSearch, CalendarDays, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PoliceOfficerSchema } from '@/lib/schemas';
 import type { z } from 'zod';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+
 
 export default function PoliciaisPage() {
-  const { officers, addOfficer, updateOfficer, deleteOfficer } = useStore();
+  const { officers, addOfficer, updateOfficer, deleteOfficer, loans } = useStore();
   const { toast } = useToast();
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingOfficer, setEditingOfficer] = React.useState<PoliceOfficer | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [officerToDelete, setOfficerToDelete] = React.useState<PoliceOfficer | null>(null);
+
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false);
+  const [selectedOfficerForDetails, setSelectedOfficerForDetails] = React.useState<PoliceOfficer | null>(null);
+  const [officerLoanHistory, setOfficerLoanHistory] = React.useState<Loan[]>([]);
+
 
   const handleFormSubmit = async (values: z.infer<typeof PoliceOfficerSchema>) => {
     setIsSubmitting(true);
@@ -85,8 +98,16 @@ export default function PoliciaisPage() {
     }
   };
 
+  const openDetailsDialog = (officer: PoliceOfficer) => {
+    setSelectedOfficerForDetails(officer);
+    const history = loans.filter(loan => loan.officerId === officer.id)
+                         .sort((a, b) => parseISO(b.loanDate).getTime() - parseISO(a.loanDate).getTime());
+    setOfficerLoanHistory(history);
+    setIsDetailsDialogOpen(true);
+  };
+
   return (
-    <>
+    <TooltipProvider>
       <PageHeader
         title="Gerenciamento de Policiais"
         description="Cadastre, visualize e edite os dados dos policiais."
@@ -127,7 +148,7 @@ export default function PoliciaisPage() {
             <Card key={officer.id} className="flex flex-col">
               <CardHeader>
                 <div className="flex items-start justify-between mb-2">
-                  <Shield className="h-8 w-8 text-primary" />
+                  <IdCard className="h-8 w-8 text-primary" />
                   {/* Status can be added later if needed, e.g., Ativo/Inativo */}
                 </div>
                 <CardTitle className="text-lg font-semibold font-headline">{officer.name}</CardTitle>
@@ -151,12 +172,39 @@ export default function PoliciaisPage() {
               </CardContent>
               <CardFooter className="border-t pt-4">
                 <div className="flex w-full justify-end space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => openEditDialog(officer)}>
-                    <Edit3 className="mr-1 h-4 w-4" /> Editar
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => openDeleteDialog(officer)}>
-                    <Trash2 className="mr-1 h-4 w-4" /> Excluir
-                  </Button>
+                   <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" onClick={() => openDetailsDialog(officer)} className="text-primary hover:bg-primary/10">
+                        <Eye className="h-4 w-4" />
+                        <span className="sr-only">Ver Detalhes</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Ver Detalhes</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" onClick={() => openEditDialog(officer)}>
+                            <Edit3 className="h-4 w-4" />
+                            <span className="sr-only">Editar</span>
+                        </Button>
+                    </TooltipTrigger>
+                     <TooltipContent>
+                        <p>Editar</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="destructive" size="icon" onClick={() => openDeleteDialog(officer)}>
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Excluir</span>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Excluir</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </CardFooter>
             </Card>
@@ -179,6 +227,92 @@ export default function PoliciaisPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+
+      {/* Officer Details Dialog */}
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <IdCard className="h-6 w-6 mr-2 text-primary" />
+              Detalhes do Policial
+            </DialogTitle>
+            {selectedOfficerForDetails && (
+                 <DialogDescription>
+                    {selectedOfficerForDetails.name} - {selectedOfficerForDetails.rank}
+                </DialogDescription>
+            )}
+          </DialogHeader>
+          {selectedOfficerForDetails && (
+            <ScrollArea className="max-h-[70vh] pr-4">
+              <div className="space-y-6 py-4">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2 font-headline">Informações Pessoais</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <p><strong className="text-muted-foreground">Nome:</strong> {selectedOfficerForDetails.name}</p>
+                    <p><strong className="text-muted-foreground">Posto/Grad.:</strong> {selectedOfficerForDetails.rank}</p>
+                    <p><strong className="text-muted-foreground">ID Funcional:</strong> {selectedOfficerForDetails.functionalId}</p>
+                    <p><strong className="text-muted-foreground">Unidade:</strong> {selectedOfficerForDetails.unit}</p>
+                    {selectedOfficerForDetails.contact && <p><strong className="text-muted-foreground">Contato:</strong> {selectedOfficerForDetails.contact}</p>}
+                    {selectedOfficerForDetails.observations && <p className="md:col-span-2"><strong className="text-muted-foreground">Observações:</strong> {selectedOfficerForDetails.observations}</p>}
+                     <p className="text-xs text-muted-foreground md:col-span-2">Cadastrado em: {format(parseISO(selectedOfficerForDetails.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-2 font-headline">Histórico de Cautelas</h3>
+                  {officerLoanHistory.length > 0 ? (
+                    <Table>
+                       <TableCaption>Histórico de todas as cautelas realizadas por este policial.</TableCaption>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Equipamentos</TableHead>
+                          <TableHead>Data Cautela</TableHead>
+                          <TableHead>Data Devolução</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {officerLoanHistory.map(loan => (
+                          <TableRow key={loan.id}>
+                            <TableCell>
+                                <ul className="list-disc list-inside text-xs">
+                                  {loan.equipment.map(eq => (
+                                    <li key={eq.id}>{eq.brand} {eq.model} (S/N: {eq.serialNumber})</li>
+                                  ))}
+                                </ul>
+                            </TableCell>
+                            <TableCell>{format(parseISO(loan.loanDate), "dd/MM/yy HH:mm", { locale: ptBR })}</TableCell>
+                            <TableCell>
+                              {loan.actualReturnDate 
+                                ? format(parseISO(loan.actualReturnDate), "dd/MM/yy HH:mm", { locale: ptBR })
+                                : (loan.expectedReturnDate ? `Prev: ${format(parseISO(loan.expectedReturnDate), "dd/MM/yy", { locale: ptBR })}` : 'N/A')}
+                            </TableCell>
+                            <TableCell>
+                                <Badge className={`${
+                                  loan.status === LoanStatus.ENTREGUE ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100' :
+                                  'bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100'
+                                }`}>{loan.status}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-center py-8 border-2 border-dashed border-border rounded-lg">
+                        <Info className="h-10 w-10 text-muted-foreground mb-3" />
+                        <p className="text-muted-foreground">Nenhum histórico de cautela para este policial.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </ScrollArea>
+          )}
+           <DialogFooter className="pt-4">
+                <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>Fechar</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </TooltipProvider>
   );
 }
+
