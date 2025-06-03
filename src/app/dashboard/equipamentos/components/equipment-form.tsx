@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -38,11 +39,16 @@ export function EquipmentForm({ onSubmit, defaultValues, isSubmitting }: Equipme
       brand: defaultValues?.brand || "",
       model: defaultValues?.model || "",
       serialNumber: defaultValues?.serialNumber || "",
-      patrimonyNumber: defaultValues?.patrimonyNumber || "",
       status: defaultValues?.status || "Disponível",
       observations: defaultValues?.observations || "",
+      // patrimonyNumber is intentionally omitted here as per user request for form removal
     },
   });
+
+  // If defaultValues contains patrimonyNumber, ensure it's part of the form submission if not edited out
+  // This is more relevant if the field was just hidden and not fully removed from schema/type for existing data
+  // However, since the request is to remove from form, we assume it won't be part of new submissions
+  // or updates via this form unless explicitly handled.
 
   return (
     <Form {...form}>
@@ -99,36 +105,21 @@ export function EquipmentForm({ onSubmit, defaultValues, isSubmitting }: Equipme
             )}
           />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="serialNumber"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Número de Série</FormLabel>
-                <FormControl>
-                  <Input placeholder="S/N" {...field} 
-                   onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="patrimonyNumber"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Número de Patrimônio (Opcional)</FormLabel>
-                <FormControl>
-                  <Input placeholder="Patrimônio" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="serialNumber"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Número de Série</FormLabel>
+              <FormControl>
+                <Input placeholder="S/N" {...field} 
+                 onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="status"
