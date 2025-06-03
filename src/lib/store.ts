@@ -2,7 +2,8 @@
 import * as React from 'react';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { Equipment, SystemUser, PoliceOfficer, Loan, UserRole, EquipmentType, LoanStatus } from './types';
+import type { Equipment, SystemUser, PoliceOfficer, Loan } from './types'; // Interfaces
+import { UserRole, EquipmentType, LoanStatus } from './types'; // Enums (used as values)
 import { v4 as uuidv4 } from 'uuid';
 
 interface AppState {
@@ -28,7 +29,7 @@ const initialAdminUser: SystemUser = {
   name: 'Admin User',
   email: 'admin@cautela.com',
   username: 'admin',
-  role: 'Administrador' as UserRole.ADMIN,
+  role: UserRole.ADMIN,
   isActive: true,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -151,5 +152,5 @@ export const useStore = create<AppState>()(
 
 // Helper component to provide store (though not strictly necessary with Zustand v4)
 export const AppStateProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
-  return (<React.Fragment>{children}</React.Fragment>);
+  return children;
 };
