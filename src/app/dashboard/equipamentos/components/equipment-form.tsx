@@ -37,7 +37,6 @@ export function EquipmentForm({ onSubmit, defaultValues, isSubmitting }: Equipme
     defaultValues: {
       type: defaultValues?.type || undefined,
       brand: defaultValues?.brand || "",
-      // model field removed from form default values
       serialNumber: defaultValues?.serialNumber || "",
       status: defaultValues?.status || "Disponível",
       observations: defaultValues?.observations || "",
@@ -76,23 +75,22 @@ export function EquipmentForm({ onSubmit, defaultValues, isSubmitting }: Equipme
           name="brand"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Marca</FormLabel>
+              <FormLabel>Marca / Modelo</FormLabel>
               <FormControl>
-                <Input placeholder="Ex: Samsung, Motorola" {...field} />
+                <Input placeholder="Ex: Samsung Galaxy S21, Motorola APX6000" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        {/* Model FormField removed */}
         <FormField
           control={form.control}
           name="serialNumber"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Número de Série</FormLabel>
+              <FormLabel>Patrimônio</FormLabel>
               <FormControl>
-                <Input placeholder="S/N" {...field} 
+                <Input placeholder="Nº de Patrimônio ou Identificador Único" {...field} 
                  onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                 />
               </FormControl>

@@ -10,9 +10,9 @@ export const LoginSchema = z.object({
 export const EquipmentSchema = z.object({
   id: z.string().optional(),
   type: z.nativeEnum(EquipmentType, { errorMap: () => ({ message: "Tipo de equipamento é obrigatório."}) }),
-  brand: z.string().min(1, "Marca é obrigatória."),
-  model: z.string().optional(), // Made model optional
-  serialNumber: z.string().min(1, "Número de série é obrigatório.").toUpperCase(),
+  brand: z.string().min(1, "Marca / Modelo é obrigatório."), // Label change reflected here for consistency
+  model: z.string().optional(),
+  serialNumber: z.string().min(1, "Patrimônio é obrigatório.").toUpperCase(), // Error message updated
   patrimonyNumber: z.string().optional(),
   status: z.enum(['Disponível', 'Em Cautela', 'Manutenção', 'Baixado']),
   observations: z.string().optional(),

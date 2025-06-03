@@ -67,18 +67,17 @@ export default function EquipamentosPage() {
     setIsSubmitting(true);
     try {
       if (editingEquipment) {
-        // For updates, ensure existing model isn't wiped if not in form values
         const updatedValues = { ...editingEquipment, ...values };
         updateEquipment({ ...updatedValues, serialNumber: values.serialNumber.toUpperCase() });
-        toast({ title: "Equipamento Atualizado", description: `O equipamento ${values.brand}${values.model ? ` ${values.model}` : ''} foi atualizado.` });
+        toast({ title: "Equipamento Atualizado", description: `O equipamento ${values.brand} foi atualizado.` });
       } else {
         const newEquipmentData = {
           ...values,
           serialNumber: values.serialNumber.toUpperCase(),
           status: values.status || 'Disponível',
-        } as Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>; // Model will be optional from schema
+        } as Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>;
         addEquipment(newEquipmentData);
-        toast({ title: "Equipamento Adicionado", description: `O equipamento ${values.brand}${values.model ? ` ${values.model}` : ''} foi adicionado.` });
+        toast({ title: "Equipamento Adicionado", description: `O equipamento ${values.brand} foi adicionado.` });
       }
       setIsFormDialogOpen(false);
       setEditingEquipment(undefined);
@@ -108,7 +107,7 @@ export default function EquipamentosPage() {
     if (equipmentToDelete) {
       try {
         deleteEquipment(equipmentToDelete.id);
-        toast({ title: "Equipamento Excluído", description: `O equipamento ${equipmentToDelete.brand}${equipmentToDelete.model ? ` ${equipmentToDelete.model}` : ''} foi excluído.` });
+        toast({ title: "Equipamento Excluído", description: `O equipamento ${equipmentToDelete.brand} foi excluído.` });
       } catch (error: any) {
          toast({ title: "Erro ao Excluir", description: error.message, variant: "destructive" });
       } finally {
@@ -178,12 +177,11 @@ export default function EquipamentosPage() {
                     {equipment.status}
                   </Badge>
                 </div>
-                <CardTitle className="text-lg font-semibold font-headline">{equipment.brand}{equipment.model ? ` ${equipment.model}` : ''}</CardTitle>
+                <CardTitle className="text-lg font-semibold font-headline">{equipment.brand}</CardTitle>
                 <CardDescription>Tipo: {equipment.type}</CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
-                <p className="text-sm text-muted-foreground">S/N: <span className="font-medium text-foreground">{equipment.serialNumber}</span></p>
-                {equipment.patrimonyNumber && <p className="text-sm text-muted-foreground">Patrimônio: <span className="font-medium text-foreground">{equipment.patrimonyNumber}</span></p>}
+                <p className="text-sm text-muted-foreground">Patrimônio: <span className="font-medium text-foreground">{equipment.serialNumber}</span></p>
                 {equipment.observations && <p className="text-sm text-muted-foreground mt-2">Obs: {equipment.observations}</p>}
               </CardContent>
               <CardFooter className="border-t pt-4">
@@ -234,7 +232,7 @@ export default function EquipamentosPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o equipamento <span className="font-semibold">{equipmentToDelete?.brand}{equipmentToDelete?.model ? ` ${equipmentToDelete.model}` : ''} (S/N: {equipmentToDelete?.serialNumber})</span>? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir o equipamento <span className="font-semibold">{equipmentToDelete?.brand} (Patrimônio: {equipmentToDelete?.serialNumber})</span>? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -254,7 +252,7 @@ export default function EquipamentosPage() {
             </DialogTitle>
             {selectedEquipmentForDetails && (
                  <DialogDescription>
-                    {selectedEquipmentForDetails.brand}{selectedEquipmentForDetails.model ? ` ${selectedEquipmentForDetails.model}` : ''} (S/N: {selectedEquipmentForDetails.serialNumber})
+                    {selectedEquipmentForDetails.brand} (Patrimônio: {selectedEquipmentForDetails.serialNumber})
                 </DialogDescription>
             )}
           </DialogHeader>
@@ -265,10 +263,8 @@ export default function EquipamentosPage() {
                   <h3 className="text-lg font-semibold mb-2 font-headline">Informações Gerais</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
                     <p><strong className="text-muted-foreground">Tipo:</strong> {selectedEquipmentForDetails.type}</p>
-                    <p><strong className="text-muted-foreground">Marca:</strong> {selectedEquipmentForDetails.brand}</p>
-                    {selectedEquipmentForDetails.model && <p><strong className="text-muted-foreground">Modelo:</strong> {selectedEquipmentForDetails.model}</p>}
-                    <p><strong className="text-muted-foreground">S/N:</strong> {selectedEquipmentForDetails.serialNumber}</p>
-                    {selectedEquipmentForDetails.patrimonyNumber && <p><strong className="text-muted-foreground">Patrimônio:</strong> {selectedEquipmentForDetails.patrimonyNumber}</p>}
+                    <p><strong className="text-muted-foreground">Marca / Modelo:</strong> {selectedEquipmentForDetails.brand}</p>
+                    <p><strong className="text-muted-foreground">Patrimônio:</strong> {selectedEquipmentForDetails.serialNumber}</p>
                     <p><strong className="text-muted-foreground">Status Atual:</strong> <Badge className={`${
                       selectedEquipmentForDetails.status === 'Disponível' ? 'bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100' :
                       selectedEquipmentForDetails.status === 'Em Cautela' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100' :

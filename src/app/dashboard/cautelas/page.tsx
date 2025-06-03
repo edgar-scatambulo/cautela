@@ -139,7 +139,7 @@ export default function CautelasPage() {
                 <h4 className="font-medium text-sm text-foreground">Equipamentos:</h4>
                 <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
                   {loan.equipment.map(eq => (
-                    <li key={eq.id}>{eq.brand}{eq.model ? ` ${eq.model}` : ''} (S/N: {eq.serialNumber})</li>
+                    <li key={eq.id}>{eq.brand} (Patrimônio: {eq.serialNumber})</li>
                   ))}
                 </ul>
                 {loan.loanObservation && (

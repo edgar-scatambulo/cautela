@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -134,7 +135,7 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
                               />
                             </FormControl>
                             <FormLabel className="text-sm font-normal cursor-pointer w-full">
-                              {equipment.brand} {equipment.model} (S/N: {equipment.serialNumber})
+                              {equipment.brand} (Patrimônio: {equipment.serialNumber})
                             </FormLabel>
                           </FormItem>
                         )
