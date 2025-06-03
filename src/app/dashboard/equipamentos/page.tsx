@@ -6,9 +6,20 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { EquipmentForm } from './components/equipment-form';
 import { useStore } from '@/lib/store';
-import { Equipment, EquipmentType } from '@/lib/types';
+import { Equipment, EquipmentType, LoanStatus } from '@/lib/types';
 import { Smartphone, Printer, Radio, PlusCircle, Edit3, Trash2, PackageSearch } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { EquipmentSchema } from '@/lib/schemas';
@@ -28,11 +39,13 @@ const EquipmentIcon = ({ type }: { type: EquipmentType }) => {
 };
 
 export default function EquipamentosPage() {
-  const { equipments, addEquipment, updateEquipment } = useStore();
+  const { equipments, addEquipment, updateEquipment, deleteEquipment, loans } = useStore();
   const { toast } = useToast();
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingEquipment, setEditingEquipment] = React.useState<Equipment | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [equipmentToDelete, setEquipmentToDelete] = React.useState<Equipment | null>(null);
 
   const handleFormSubmit = async (values: z.infer<typeof EquipmentSchema>) => {
     setIsSubmitting(true);
@@ -41,16 +54,15 @@ export default function EquipamentosPage() {
         updateEquipment({ ...editingEquipment, ...values, serialNumber: values.serialNumber.toUpperCase() });
         toast({ title: "Equipamento Atualizado", description: `O equipamento ${values.model} foi atualizado.` });
       } else {
-        // Ensure status is correctly passed from schema default or form
         const newEquipmentData = {
           ...values,
           serialNumber: values.serialNumber.toUpperCase(),
-          status: values.status || 'Disponível', // Ensure status is set
+          status: values.status || 'Disponível',
         } as Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>;
         addEquipment(newEquipmentData);
         toast({ title: "Equipamento Adicionado", description: `O equipamento ${values.model} foi adicionado.` });
       }
-      setIsDialogOpen(false);
+      setIsFormDialogOpen(false);
       setEditingEquipment(undefined);
     } catch (error) {
       toast({ title: "Erro", description: "Ocorreu um erro ao salvar o equipamento.", variant: "destructive" });
@@ -61,13 +73,32 @@ export default function EquipamentosPage() {
 
   const openEditDialog = (equipment: Equipment) => {
     setEditingEquipment(equipment);
-    setIsDialogOpen(true);
+    setIsFormDialogOpen(true);
   };
   
   const openAddDialog = () => {
     setEditingEquipment(undefined);
-    setIsDialogOpen(true);
-  }
+    setIsFormDialogOpen(true);
+  };
+
+  const openDeleteDialog = (equipment: Equipment) => {
+    setEquipmentToDelete(equipment);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (equipmentToDelete) {
+      try {
+        deleteEquipment(equipmentToDelete.id);
+        toast({ title: "Equipamento Excluído", description: `O equipamento ${equipmentToDelete.model} foi excluído.` });
+      } catch (error: any) {
+         toast({ title: "Erro ao Excluir", description: error.message, variant: "destructive" });
+      } finally {
+        setIsDeleteDialogOpen(false);
+        setEquipmentToDelete(null);
+      }
+    }
+  };
 
   return (
     <>
@@ -77,7 +108,7 @@ export default function EquipamentosPage() {
           description="Cadastre, visualize e edite os equipamentos."
           icon={PackageSearch}
           actions={
-            <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) setEditingEquipment(undefined); }}>
+            <Dialog open={isFormDialogOpen} onOpenChange={(open) => { setIsFormDialogOpen(open); if(!open) setEditingEquipment(undefined); }}>
               <DialogTrigger asChild>
                 <Button onClick={openAddDialog}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Equipamento
@@ -136,10 +167,9 @@ export default function EquipamentosPage() {
                     <Button variant="outline" size="sm" onClick={() => openEditDialog(equipment)}>
                       <Edit3 className="mr-1 h-4 w-4" /> Editar
                     </Button>
-                    {/* Delete functionality can be added here */}
-                    {/* <Button variant="destructive" size="sm" onClick={() => {/* handle delete */}}> {/*
+                    <Button variant="destructive" size="sm" onClick={() => openDeleteDialog(equipment)}>
                       <Trash2 className="mr-1 h-4 w-4" /> Excluir
-                    </Button> */}
+                    </Button>
                   </div>
                 </CardFooter>
               </Card>
@@ -147,6 +177,22 @@ export default function EquipamentosPage() {
           </div>
         )}
       </React.Fragment>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o equipamento <span className="font-semibold">{equipmentToDelete?.brand} {equipmentToDelete?.model} (S/N: {equipmentToDelete?.serialNumber})</span>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setEquipmentToDelete(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

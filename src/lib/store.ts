@@ -18,10 +18,10 @@ interface AppState {
   logout: () => void;
   addEquipment: (equipment: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => Equipment;
   updateEquipment: (equipment: Equipment) => void;
+  deleteEquipment: (equipmentId: string) => void;
   addOfficer: (officer: Omit<PoliceOfficer, 'id' | 'createdAt' | 'updatedAt'>) => PoliceOfficer;
-  addLoan: (loan: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'loanedByUserId'>) => Loan;
+  addLoan: (loan: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'loanedByUserId' | 'equipment'> & { equipmentIds: string[] }) => Loan;
   updateLoanStatus: (loanId: string, status: LoanStatus, returnDate?: string, returnTime?: string, returnObservation?: string, returnedToUserId?: string) => void;
-  // Add more actions as needed: addUser, updateOfficer, etc.
 }
 
 const initialAdminUser: SystemUser = {
@@ -79,6 +79,20 @@ export const useStore = create<AppState>()(
         }
       });
     },
+    deleteEquipment: (equipmentId) => {
+      set((state) => {
+        // Check if the equipment is in any active loan
+        const isActiveLoan = state.loans.some(loan => 
+          loan.equipment.some(eq => eq.id === equipmentId) && loan.status === LoanStatus.ENTREGUE
+        );
+
+        if (isActiveLoan) {
+          throw new Error("Equipamento não pode ser excluído pois está em uma cautela ativa.");
+        }
+        
+        state.equipments = state.equipments.filter(e => e.id !== equipmentId);
+      });
+    },
     addOfficer: (officerData) => {
        const newOfficer: PoliceOfficer = {
         ...officerData,
@@ -98,13 +112,18 @@ export const useStore = create<AppState>()(
       const equipmentDetails = loanData.equipmentIds.map(id => {
         const eq = get().equipments.find(e => e.id === id);
         if (!eq) throw new Error(`Equipamento com ID ${id} não encontrado.`);
+        if (eq.status !== 'Disponível') throw new Error(`Equipamento ${eq.brand} ${eq.model} (S/N: ${eq.serialNumber}) não está disponível.`);
         return eq;
       });
 
       const newLoan: Loan = {
-        ...loanData,
         id: uuidv4(),
+        officerId: loanData.officerId,
         equipment: equipmentDetails,
+        loanDate: loanData.loanDate,
+        loanTime: loanData.loanTime,
+        expectedReturnDate: loanData.expectedReturnDate,
+        loanObservation: loanData.loanObservation,
         status: LoanStatus.ENTREGUE,
         loanedByUserId: currentUser.id,
         createdAt: new Date().toISOString(),
