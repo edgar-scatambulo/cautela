@@ -97,7 +97,7 @@ export default function DashboardPage() {
     <>
       <PageHeader
         title={`Bem-vindo(a), ${currentUser.name}!`}
-        description="Visão geral do sistema Cautela Control."
+        description="Visão geral do sistema Cautela Digital."
       />
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <DashboardStatCard

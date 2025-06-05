@@ -30,7 +30,7 @@ function AppLogo() {
     <Link href="/dashboard" className="flex items-center gap-2 px-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
       <ShieldCheck className="h-7 w-7 text-primary transition-all group-hover/sidebar-wrapper:scale-110" />
       <span className="font-bold text-lg text-sidebar-foreground group-data-[collapsible=icon]:hidden font-headline">
-        Cautela Control
+        Cautela Digital
       </span>
     </Link>
   );
@@ -128,7 +128,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <SidebarTrigger className="md:hidden mr-4" /> {/* Mobile trigger */}
               <h1 className="text-xl font-semibold font-headline text-foreground">
                 {/* Dynamically set page title here or keep it general */}
-                Painel Cautela Control
+                Painel Cautela Digital
               </h1>
             </div>
             <UserProfileDropdown />

@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { AppStateProvider } from '@/lib/store';
 
 export const metadata: Metadata = {
-  title: 'Cautela Control',
+  title: 'Cautela Digital',
   description: 'Software de controle de cautela',
 };
 
