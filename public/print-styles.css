@@ -1,71 +1,79 @@
+/* public/print-styles.css */
 @media print {
-  body {
+  html, body {
+    background-color: transparent !important; /* Garante fundo transparente, usando a cor do papel */
+    color: #000 !important; /* Texto preto */
     font-family: 'Inter', sans-serif;
-    color: black;
-    background-color: white;
-    -webkit-print-color-adjust: exact; /* Chrome, Safari */
-    print-color-adjust: exact; /* Firefox, Edge */
+    margin: 20px; /* Margem para layout de impressão */
+    -webkit-font-smoothing: antialiased; /* Melhora a renderização da fonte */
+    text-rendering: optimizeLegibility;
   }
 
-  main {
-    padding: 0 !important;
-    margin: 0 !important;
-    overflow: visible !important;
-  }
-
-  .card-print {
-    border: 1px solid #aaa !important;
+  /* Remove todas as imagens de fundo e sombras */
+  * {
+    background-image: none !important;
     box-shadow: none !important;
-    page-break-inside: avoid !important;
-    margin-bottom: 0.75rem !important;
-    background-color: white !important;
-    color: black !important;
-  }
-
-  .card-print * {
-    color: black !important;
-    background-color: transparent !important; /* Garante que filhos não tenham fundos coloridos indesejados */
-  }
-  
-  .card-print .text-muted-foreground {
-    color: #444 !important;
-  }
-
-  .card-print .font-headline {
-    font-family: 'Space Grotesk', sans-serif !important;
-  }
-  
-  .card-print .bg-yellow-100, 
-  .card-print .bg-green-100,
-  .card-print .dark\\:bg-yellow-700, 
-  .card-print .dark\\:bg-green-700,
-  .card-print .text-yellow-700, 
-  .card-print .text-green-700,
-  .card-print .dark\\:text-yellow-100, 
-  .card-print .dark\\:text-green-100 {
-    background-color: transparent !important;
-    border: 1px solid #aaa !important;
-    color: black !important;
-    padding: 1px 4px;
-    border-radius: 0.25rem; /* Mantém um pouco do estilo do badge */
-  }
-
-  .card-print ul {
-    list-style-position: outside;
-    padding-left: 1.5em;
-  }
-
-  @page {
-    size: A4;
-    margin: 2cm 1.5cm; /* Top/Bottom, Left/Right */
+    text-shadow: none !important;
   }
 
   .page-header-print-title {
     display: block !important;
     text-align: center;
-    font-size: 1.75rem;
-    font-weight: bold;
-    margin-bottom: 1.5rem;
-    color: black !important;
+    font-size: 22px; /* Ajuste no tamanho da fonte */
+    margin-bottom: 20px;
+    font-family: 'Space Grotesk', sans-serif;
+    color: #000 !important;
+    background-color: transparent !important;
+  }
+
+  .print-hidden {
+    display: none !important;
+  }
+  
+  .card-print {
+    background-color: transparent !important; /* Fundo do card transparente */
+    border: 1px solid #bbb !important; /* Borda um pouco mais escura para visibilidade */
+    page-break-inside: avoid;
+    margin-bottom: 15px;
+    padding: 10px;
+  }
+
+  .card-print * {
+    color: #000 !important;
+    background-color: transparent !important; /* Elementos dentro do card também transparentes */
+  }
+
+  /* Estilo para badges na impressão - sem fundo, borda leve */
+  .card-print span[class*="bg-yellow-100"],
+  .card-print span[class*="bg-green-100"],
+  .card-print span[class*="dark:bg-yellow-700"],
+  .card-print span[class*="dark:bg-green-700"] {
+    background-color: transparent !important;
+    color: #000 !important;
+    border: 1px solid #ddd !important; /* Borda bem clara */
+    padding: 1px 3px;
+    font-size: 0.75em; /* Um pouco menor */
+    border-radius: 3px;
+    display: inline-block; /* Garante que o padding seja aplicado corretamente */
+  }
+
+  .card-print a {
+    color: #000 !important;
+    text-decoration: underline !important;
+  }
+
+  /* Opcional: mostrar URL de links - pode ser útil ou poluir, desabilitado por padrão */
+  /* .card-print a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.9em;
+    color: #555;
+  } */
+
+  /* Evitar quebras de página indesejadas dentro de elementos de texto comuns */
+  .card-print p, .card-print li, .card-print h4 {
+    page-break-inside: avoid;
+  }
+  .card-print ul {
+    padding-left: 20px; /* Garante que as listas fiquem indentadas */
   }
 }
