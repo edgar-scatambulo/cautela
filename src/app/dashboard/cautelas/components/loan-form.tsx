@@ -134,7 +134,7 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
                               />
                             </FormControl>
                             <FormLabel className="text-sm font-normal cursor-pointer w-full">
-                              (Patrimônio: {equipment.serialNumber}) {equipment.brand} 
+                              ({equipment.serialNumber}) {equipment.brand} 
                             </FormLabel>
                           </FormItem>
                         )
