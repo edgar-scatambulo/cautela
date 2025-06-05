@@ -134,7 +134,14 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
                               />
                             </FormControl>
                             <FormLabel className="text-sm font-normal cursor-pointer w-full">
-                              ({equipment.serialNumber}) {equipment.brand} 
+                              <div>
+                                ({equipment.serialNumber}) {equipment.brand}
+                              </div>
+                              {equipment.observations && (
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                  Obs: {equipment.observations}
+                                </div>
+                              )}
                             </FormLabel>
                           </FormItem>
                         )
