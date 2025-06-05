@@ -31,6 +31,44 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCap
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
+const ContactDisplay = ({ contactValue }: { contactValue: string }) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // Heuristic regex to identify strings that might be phone numbers
+  const phoneIndicatorRegex = /(\d{2,}\)?\s?\d{4,}-?\d{4,})/;
+
+  if (emailRegex.test(contactValue)) {
+    return (
+      <a href={`mailto:${contactValue}`} className="font-medium text-primary hover:underline ml-1">
+        {contactValue}
+      </a>
+    );
+  }
+
+  const cleanedPhone = contactValue.replace(/\D/g, ''); // Remove all non-digits
+  const isLikelyPhone = phoneIndicatorRegex.test(contactValue) && cleanedPhone.length >= 8;
+
+  if (isLikelyPhone) {
+    let whatsappNumber = cleanedPhone;
+    // Add '55' for Brazilian numbers if it's a common length (10 or 11 digits) and doesn't start with '55'
+    if ((whatsappNumber.length === 10 || whatsappNumber.length === 11) && !whatsappNumber.startsWith('55')) {
+      whatsappNumber = '55' + whatsappNumber;
+    }
+    
+    return (
+      <a
+        href={`https://web.whatsapp.com/send?phone=${whatsappNumber}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-medium text-primary hover:underline ml-1"
+      >
+        {contactValue}
+      </a>
+    );
+  }
+
+  return <span className="font-medium text-foreground ml-1">{contactValue}</span>;
+};
+
 
 export default function PoliciaisPage() {
   const { officers, addOfficer, updateOfficer, deleteOfficer, loans } = useStore();
@@ -156,7 +194,7 @@ export default function PoliciaisPage() {
               </CardHeader>
               <CardContent className="flex-grow space-y-1">
                 <p className="text-sm text-muted-foreground flex items-center">
-                  <Mail className="h-4 w-4 mr-2 shrink-0" /> Contato: <span className="font-medium text-foreground ml-1">{officer.functionalId}</span>
+                  <Mail className="h-4 w-4 mr-2 shrink-0" /> Contato: <ContactDisplay contactValue={officer.functionalId} />
                 </p>
                 {officer.unit && (
                   <p className="text-sm text-muted-foreground flex items-center">
@@ -215,7 +253,7 @@ export default function PoliciaisPage() {
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza que deseja excluir o policial <span className="font-semibold">{officerToDelete?.name}</span>?
-              {officerToDelete?.functionalId && <> O contato associado é <span className="font-semibold">{officerToDelete.functionalId}</span>.</>}
+              {officerToDelete?.functionalId && <> O contato associado é <ContactDisplay contactValue={officerToDelete.functionalId} />.</>}
               Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -247,7 +285,7 @@ export default function PoliciaisPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
                     <p><strong className="text-muted-foreground">Nome de Guerra:</strong> {selectedOfficerForDetails.name}</p>
                     <p><strong className="text-muted-foreground">Posto/Grad.:</strong> {selectedOfficerForDetails.rank}</p>
-                    <p><strong className="text-muted-foreground">Contato:</strong> {selectedOfficerForDetails.functionalId}</p>
+                    <p><strong className="text-muted-foreground">Contato:</strong> <ContactDisplay contactValue={selectedOfficerForDetails.functionalId} /></p>
                     {selectedOfficerForDetails.unit && <p><strong className="text-muted-foreground">Unidade:</strong> {selectedOfficerForDetails.unit}</p>}
                     {selectedOfficerForDetails.observations && <p className="md:col-span-2"><strong className="text-muted-foreground">Observações:</strong> {selectedOfficerForDetails.observations}</p>}
                      <p className="text-xs text-muted-foreground md:col-span-2">Cadastrado em: {format(parseISO(selectedOfficerForDetails.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
@@ -311,3 +349,4 @@ export default function PoliciaisPage() {
     </TooltipProvider>
   );
 }
+
