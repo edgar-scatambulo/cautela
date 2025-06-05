@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarIcon, Filter, Search } from 'lucide-react';
+import { CalendarIcon, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -18,21 +18,22 @@ import { LoanStatus } from '@/lib/types';
 
 interface ReportFiltersProps {
   officers: PoliceOfficer[];
-  onFilterChange: (filters: { dateRange?: DateRange; officerId?: string; status?: string }) => void;
+  onFilterChange: (filters: { dateRange?: DateRange; officerId?: string; status?: string; patrimony?: string }) => void;
 }
 
 export function ReportFilters({ officers, onFilterChange }: ReportFiltersProps) {
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
   const [officerId, setOfficerId] = React.useState<string | undefined>(undefined);
   const [status, setStatus] = React.useState<string | undefined>(undefined);
+  const [patrimony, setPatrimony] = React.useState<string>('');
 
   const handleApplyFilters = () => {
-    onFilterChange({ dateRange, officerId, status });
+    onFilterChange({ dateRange, officerId, status, patrimony: patrimony.trim() });
   };
 
   return (
-    <div className="mb-6 p-4 border rounded-lg bg-card shadow">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+    <div className="mb-6 p-4 border rounded-lg bg-card shadow print:hidden">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
         <div>
           <Label htmlFor="date-range" className="mb-1 block">Período da Cautela</Label>
           <Popover>
@@ -84,7 +85,7 @@ export function ReportFilters({ officers, onFilterChange }: ReportFiltersProps) 
               <SelectItem value="all">Todos os policiais</SelectItem>
               {officers.map((officer) => (
                 <SelectItem key={officer.id} value={officer.id}>
-                  {officer.name} ({officer.rank}) {/* Display rank instead of functionalId here for brevity */}
+                  {officer.name} ({officer.rank})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -105,7 +106,18 @@ export function ReportFilters({ officers, onFilterChange }: ReportFiltersProps) 
           </Select>
         </div>
 
-        <Button onClick={handleApplyFilters} className="w-full md:w-auto">
+        <div>
+          <Label htmlFor="patrimony-input" className="mb-1 block">Patrimônio do Equipamento</Label>
+          <Input
+            id="patrimony-input"
+            placeholder="Digite o patrimônio"
+            value={patrimony}
+            onChange={(e) => setPatrimony(e.target.value)}
+          />
+        </div>
+      </div>
+      <div className="mt-4 flex justify-end">
+        <Button onClick={handleApplyFilters}>
           <Search className="mr-2 h-4 w-4" /> Aplicar Filtros
         </Button>
       </div>

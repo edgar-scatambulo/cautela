@@ -4,7 +4,7 @@
 import React from 'react';
 import { PageHeader } from '@/components/page-header';
 import { useStore } from '@/lib/store';
-import { Loan, PoliceOfficer, LoanStatus } from '@/lib/types'; // Import LoanStatus
+import { Loan, PoliceOfficer, LoanStatus } from '@/lib/types';
 import { ReportFilters } from './components/report-filters';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, User, CalendarDays, PackageSearch, Info, Printer } from 'lucide-react';
@@ -23,12 +23,11 @@ export default function RelatoriosPage() {
   const [filteredLoans, setFilteredLoans] = React.useState<Loan[]>([]);
 
   React.useEffect(() => {
-    // Initialize with all loans sorted, also ensures we work with a copy
     setFilteredLoans([...loans].sort((a, b) => parseISO(b.loanDate).getTime() - parseISO(a.loanDate).getTime()));
   }, [loans]);
 
-  const handleFilterChange = (filters: { dateRange?: DateRange; officerId?: string; status?: string }) => {
-    let tempLoans = [...loans]; // Start with a fresh copy of all loans
+  const handleFilterChange = (filters: { dateRange?: DateRange; officerId?: string; status?: string; patrimony?: string }) => {
+    let tempLoans = [...loans]; 
 
     if (filters.dateRange?.from) {
       const fromDate = filters.dateRange.from;
@@ -50,6 +49,15 @@ export default function RelatoriosPage() {
     if (filters.status && filters.status !== 'all') {
       tempLoans = tempLoans.filter(loan => loan.status === filters.status);
     }
+
+    if (filters.patrimony) {
+      const searchTerm = filters.patrimony.toLowerCase();
+      tempLoans = tempLoans.filter(loan =>
+        loan.equipment.some(eq =>
+          eq.serialNumber.toLowerCase().includes(searchTerm)
+        )
+      );
+    }
     
     setFilteredLoans(tempLoans.sort((a, b) => parseISO(b.loanDate).getTime() - parseISO(a.loanDate).getTime()));
   };
@@ -66,7 +74,7 @@ export default function RelatoriosPage() {
 
       <PageHeader
         title="Relatório de Cautelas"
-        description="Visualize todas as cautelas efetuadas com filtros por data, policial e status."
+        description="Visualize todas as cautelas efetuadas com filtros por data, policial, status da cautela e patrimônio do equipamento."
         icon={FileText}
         actions={
           <Button onClick={handlePrint} variant="outline" className="print:hidden">
