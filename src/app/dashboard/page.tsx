@@ -196,7 +196,7 @@ export default function DashboardPage() {
                     <SelectContent>
                       {activeLoansList.map(loan => (
                         <SelectItem key={loan.id} value={loan.id}>
-                          #{loan.id.substring(0, 6)} (Policial: {getOfficerName(loan.officerId, officers)}) Data: {format(parseISO(loan.loanDate), "dd/MM/yy", { locale: ptBR })}
+                          #{loan.id.substring(0, 6)} ({getOfficerName(loan.officerId, officers)}) Data: {format(parseISO(loan.loanDate), "dd/MM/yy", { locale: ptBR })}
                         </SelectItem>
                       ))}
                     </SelectContent>
