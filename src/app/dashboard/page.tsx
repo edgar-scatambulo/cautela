@@ -180,7 +180,7 @@ export default function DashboardPage() {
                   <CardDescription>Acessar histórico de cautelas.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                   <Button className="w-full" variant="outline">
+                   <Button className="w-full">
                     <FileText className="mr-2 h-4 w-4" /> Acessar Relatórios
                   </Button>
                 </CardContent>
