@@ -1,16 +1,18 @@
 import type { LucideIcon } from 'lucide-react';
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 interface PageHeaderProps {
   title: string;
   description?: string;
   icon?: LucideIcon;
   actions?: React.ReactNode;
+  className?: string; 
 }
 
-export function PageHeader({ title, description, icon: Icon, actions }: PageHeaderProps) {
+export function PageHeader({ title, description, icon: Icon, actions, className }: PageHeaderProps) {
   return (
-    <div className="mb-6 md:flex md:items-center md:justify-between">
+    <div className={cn("mb-6 md:flex md:items-center md:justify-between", className)}>
       <div className="flex-1 min-w-0">
         <div className="flex items-center">
           {Icon && <Icon className="h-8 w-8 text-primary mr-3" />}

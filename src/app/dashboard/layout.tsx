@@ -109,7 +109,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <SidebarProvider defaultOpen>
       <div className="flex min-h-screen">
-        <Sidebar className="bg-sidebar text-sidebar-foreground border-r border-sidebar-border" collapsible="icon">
+        <Sidebar className="bg-sidebar text-sidebar-foreground border-r border-sidebar-border print:hidden" collapsible="icon">
           <SidebarHeader className="p-4 border-b border-sidebar-border">
             <AppLogo />
           </SidebarHeader>
@@ -123,7 +123,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </SidebarFooter> */}
         </Sidebar>
         <SidebarInset className="flex-1 flex flex-col bg-background">
-          <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-card px-6 shadow-sm">
+          <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-card px-6 shadow-sm print:hidden">
             <div className="flex items-center">
               <SidebarTrigger className="md:hidden mr-4" /> {/* Mobile trigger */}
               <h1 className="text-xl font-semibold font-headline text-foreground">

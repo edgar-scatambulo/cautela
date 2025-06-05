@@ -7,7 +7,8 @@ import { useStore } from '@/lib/store';
 import { Loan, PoliceOfficer } from '@/lib/types';
 import { ReportFilters } from './components/report-filters';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, User, CalendarDays, PackageSearch, Info } from 'lucide-react';
+import { FileText, User, CalendarDays, PackageSearch, Info, Printer } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { format, parseISO, isWithinInterval, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
@@ -30,12 +31,15 @@ export default function RelatoriosPage() {
 
     if (filters.dateRange?.from) {
       const fromDate = filters.dateRange.from;
-      const toDate = filters.dateRange.to || filters.dateRange.from; // If no 'to' date, use 'from' date for single day range
+      const toDate = filters.dateRange.to || filters.dateRange.from; 
 
       tempLoans = tempLoans.filter(loan => {
         const loanDate = parseISO(loan.loanDate);
         if (!isValid(loanDate)) return false;
-        return isWithinInterval(loanDate, { start: fromDate, end: toDate });
+        // Adjust toDate to include the whole day for range end
+        const adjustedToDate = new Date(toDate);
+        adjustedToDate.setHours(23, 59, 59, 999);
+        return isWithinInterval(loanDate, { start: fromDate, end: adjustedToDate });
       });
     }
 
@@ -43,21 +47,37 @@ export default function RelatoriosPage() {
       tempLoans = tempLoans.filter(loan => loan.officerId === filters.officerId);
     }
     
-    setFilteredLoans(tempLoans);
+    setFilteredLoans(tempLoans.sort((a, b) => parseISO(b.loanDate).getTime() - parseISO(a.loanDate).getTime()));
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   return (
     <>
+      <h1 className="text-3xl font-bold text-center mb-6 hidden print:block page-header-print-title font-headline">
+        Relatório de Cautelas
+      </h1>
+
       <PageHeader
         title="Relatório de Cautelas"
         description="Visualize todas as cautelas efetuadas com filtros por data e policial."
         icon={FileText}
+        actions={
+          <Button onClick={handlePrint} variant="outline" className="print:hidden">
+            <Printer className="mr-2 h-4 w-4" /> Imprimir Relatório
+          </Button>
+        }
+        className="print:hidden"
       />
 
-      <ReportFilters officers={officers} onFilterChange={handleFilterChange} />
+      <div className="print:hidden">
+        <ReportFilters officers={officers} onFilterChange={handleFilterChange} />
+      </div>
 
       {filteredLoans.length === 0 ? (
-         <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed border-border rounded-lg">
+         <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed border-border rounded-lg print:hidden">
             <Info className="h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold text-foreground mb-2">Nenhuma cautela encontrada</h3>
             <p className="text-muted-foreground">Não há cautelas que correspondam aos filtros aplicados ou nenhuma cautela foi registrada ainda.</p>
@@ -65,7 +85,7 @@ export default function RelatoriosPage() {
       ) : (
         <div className="space-y-6">
           {filteredLoans.map((loan) => (
-            <Card key={loan.id}>
+            <Card key={loan.id} className="card-print">
               <CardHeader>
                  <div className="flex items-center justify-between mb-2">
                   <CardTitle className="text-lg font-semibold font-headline">
