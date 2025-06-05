@@ -90,8 +90,8 @@ export default function CautelasPage() {
     if (statusFilter === LoanStatus.ENTREGUE) {
       filtered = filtered.filter(loan => loan.status === LoanStatus.ENTREGUE);
     }
-    // Default sort or any other sorting logic
-    setDisplayedLoans(filtered.sort((a, b) => parseISO(b.loanDate).getTime() - parseISO(a.loanDate).getTime()));
+    // Sort loans by loanDate and loanTime in descending order (newest first)
+    setDisplayedLoans(filtered.sort((a, b) => new Date(b.loanDate + "T" + b.loanTime).getTime() - new Date(a.loanDate + "T" + a.loanTime).getTime()));
   }, [loans, statusFilter]);
 
   const handleLoanFormSubmit = async (values: z.infer<typeof LoanSchema>) => {
