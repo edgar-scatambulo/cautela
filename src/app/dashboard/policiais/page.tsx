@@ -19,7 +19,7 @@ import {
 import { PoliceOfficerForm } from './components/police-officer-form';
 import { useStore } from '@/lib/store';
 import type { PoliceOfficer, Loan } from '@/lib/types';
-import { LoanStatus } from '@/lib/types';
+import { LoanStatus, UserRole } from '@/lib/types';
 import { Shield, UserPlus, Edit3, Award, Trash2, Eye, Info, UserCircle, Mail, CalendarDays } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PoliceOfficerSchema } from '@/lib/schemas';
@@ -71,7 +71,7 @@ const ContactDisplay = ({ contactValue }: { contactValue: string }) => {
 
 
 export default function PoliciaisPage() {
-  const { officers, addOfficer, updateOfficer, deleteOfficer, loans } = useStore();
+  const { officers, addOfficer, updateOfficer, deleteOfficer, loans, currentUser } = useStore();
   const { toast } = useToast();
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingOfficer, setEditingOfficer] = React.useState<PoliceOfficer | undefined>(undefined);
@@ -143,6 +143,8 @@ export default function PoliciaisPage() {
     setIsDetailsDialogOpen(true);
   };
 
+  const canManageOfficers = currentUser?.role === UserRole.ADMIN;
+
   return (
     <TooltipProvider>
       <PageHeader
@@ -150,23 +152,25 @@ export default function PoliciaisPage() {
         description="Cadastre, visualize e edite os dados dos policiais."
         icon={Shield}
         actions={
-          <Dialog open={isFormDialogOpen} onOpenChange={(open) => { setIsFormDialogOpen(open); if(!open) setEditingOfficer(undefined); }}>
-            <DialogTrigger asChild>
-              <Button onClick={openAddDialog}>
-                <UserPlus className="mr-2 h-4 w-4" /> Adicionar Policial
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>{editingOfficer ? 'Editar Dados do Policial' : 'Adicionar Novo Policial'}</DialogTitle>
-              </DialogHeader>
-              <PoliceOfficerForm 
-                onSubmit={handleFormSubmit} 
-                defaultValues={editingOfficer}
-                isSubmitting={isSubmitting} 
-              />
-            </DialogContent>
-          </Dialog>
+          canManageOfficers ? (
+            <Dialog open={isFormDialogOpen} onOpenChange={(open) => { setIsFormDialogOpen(open); if(!open) setEditingOfficer(undefined); }}>
+              <DialogTrigger asChild>
+                <Button onClick={openAddDialog}>
+                  <UserPlus className="mr-2 h-4 w-4" /> Adicionar Policial
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>{editingOfficer ? 'Editar Dados do Policial' : 'Adicionar Novo Policial'}</DialogTitle>
+                </DialogHeader>
+                <PoliceOfficerForm 
+                  onSubmit={handleFormSubmit} 
+                  defaultValues={editingOfficer}
+                  isSubmitting={isSubmitting} 
+                />
+              </DialogContent>
+            </Dialog>
+          ) : null
         }
       />
 
@@ -175,9 +179,11 @@ export default function PoliciaisPage() {
             <Shield className="h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold text-foreground mb-2">Nenhum policial cadastrado</h3>
             <p className="text-muted-foreground mb-4">Comece adicionando novos policiais ao sistema.</p>
-            <Button onClick={openAddDialog}>
-              <UserPlus className="mr-2 h-4 w-4" /> Adicionar Primeiro Policial
-            </Button>
+            {canManageOfficers && (
+              <Button onClick={openAddDialog}>
+                <UserPlus className="mr-2 h-4 w-4" /> Adicionar Primeiro Policial
+              </Button>
+            )}
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -218,28 +224,32 @@ export default function PoliciaisPage() {
                       <p>Ver Detalhes</p>
                     </TooltipContent>
                   </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon" onClick={() => openEditDialog(officer)}>
-                            <Edit3 className="h-4 w-4" />
-                            <span className="sr-only">Editar</span>
-                        </Button>
-                    </TooltipTrigger>
-                     <TooltipContent>
-                        <p>Editar</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="destructive" size="icon" onClick={() => openDeleteDialog(officer)}>
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Excluir</span>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>Excluir</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  {canManageOfficers && (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="outline" size="icon" onClick={() => openEditDialog(officer)}>
+                                <Edit3 className="h-4 w-4" />
+                                <span className="sr-only">Editar</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Editar</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="destructive" size="icon" onClick={() => openDeleteDialog(officer)}>
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">Excluir</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Excluir</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </>
+                  )}
                 </div>
               </CardFooter>
             </Card>
@@ -350,3 +360,5 @@ export default function PoliciaisPage() {
   );
 }
 
+
+    

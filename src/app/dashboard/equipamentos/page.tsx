@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { EquipmentForm } from './components/equipment-form';
 import { useStore } from '@/lib/store';
-import { Equipment, EquipmentType, Loan, PoliceOfficer, LoanStatus } from '@/lib/types';
+import { Equipment, EquipmentType, Loan, PoliceOfficer, LoanStatus, UserRole } from '@/lib/types';
 import { Smartphone, Printer, Radio, PlusCircle, Edit3, Trash2, PackageSearch, Eye, User, CalendarDays, Clock, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { EquipmentSchema } from '@/lib/schemas';
@@ -50,7 +50,7 @@ const getOfficerNameLocal = (officerId: string, officers: PoliceOfficer[]): stri
 
 
 export default function EquipamentosPage() {
-  const { equipments, addEquipment, updateEquipment, deleteEquipment, loans, officers } = useStore();
+  const { equipments, addEquipment, updateEquipment, deleteEquipment, loans, officers, currentUser } = useStore();
   const { toast } = useToast();
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingEquipment, setEditingEquipment] = React.useState<Equipment | undefined>(undefined);
@@ -125,6 +125,8 @@ export default function EquipamentosPage() {
     setIsDetailsDialogOpen(true);
   };
 
+  const canManageEquipments = currentUser?.role === UserRole.ADMIN;
+
   return (
     <TooltipProvider>
       <PageHeader
@@ -132,23 +134,25 @@ export default function EquipamentosPage() {
         description="Cadastre, visualize e edite os equipamentos."
         icon={PackageSearch}
         actions={
-          <Dialog open={isFormDialogOpen} onOpenChange={(open) => { setIsFormDialogOpen(open); if(!open) setEditingEquipment(undefined); }}>
-            <DialogTrigger asChild>
-              <Button onClick={openAddDialog}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Equipamento
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>{editingEquipment ? 'Editar Equipamento' : 'Adicionar Novo Equipamento'}</DialogTitle>
-              </DialogHeader>
-              <EquipmentForm 
-                onSubmit={handleFormSubmit} 
-                defaultValues={editingEquipment}
-                isSubmitting={isSubmitting} 
-              />
-            </DialogContent>
-          </Dialog>
+          canManageEquipments ? (
+            <Dialog open={isFormDialogOpen} onOpenChange={(open) => { setIsFormDialogOpen(open); if(!open) setEditingEquipment(undefined); }}>
+              <DialogTrigger asChild>
+                <Button onClick={openAddDialog}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Equipamento
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>{editingEquipment ? 'Editar Equipamento' : 'Adicionar Novo Equipamento'}</DialogTitle>
+                </DialogHeader>
+                <EquipmentForm 
+                  onSubmit={handleFormSubmit} 
+                  defaultValues={editingEquipment}
+                  isSubmitting={isSubmitting} 
+                />
+              </DialogContent>
+            </Dialog>
+          ) : null
         }
       />
       
@@ -157,9 +161,11 @@ export default function EquipamentosPage() {
             <PackageSearch className="h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold text-foreground mb-2">Nenhum equipamento cadastrado</h3>
             <p className="text-muted-foreground mb-4">Comece adicionando novos equipamentos ao sistema.</p>
-            <Button onClick={openAddDialog}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Primeiro Equipamento
-            </Button>
+            {canManageEquipments && (
+              <Button onClick={openAddDialog}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Primeiro Equipamento
+              </Button>
+            )}
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -197,28 +203,32 @@ export default function EquipamentosPage() {
                       <p>Ver Detalhes</p>
                     </TooltipContent>
                   </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" size="icon" onClick={() => openEditDialog(equipment)}>
-                        <Edit3 className="h-4 w-4" />
-                        <span className="sr-only">Editar</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Editar</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="destructive" size="icon" onClick={() => openDeleteDialog(equipment)}>
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Excluir</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Excluir</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  {canManageEquipments && (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" size="icon" onClick={() => openEditDialog(equipment)}>
+                            <Edit3 className="h-4 w-4" />
+                            <span className="sr-only">Editar</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Editar</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="destructive" size="icon" onClick={() => openDeleteDialog(equipment)}>
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Excluir</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Excluir</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </>
+                  )}
                 </div>
               </CardFooter>
             </Card>
@@ -330,4 +340,6 @@ export default function EquipamentosPage() {
     </TooltipProvider>
   );
 }
+    
+
     
