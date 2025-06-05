@@ -112,12 +112,16 @@ export default function DashboardPage() {
           icon={Shield}
           description="Total de policiais no sistema"
         />
-        <DashboardStatCard
-          title="Cautelas Ativas"
-          value={activeLoansCount}
-          icon={ClipboardList}
-          description="Equipamentos atualmente emprestados"
-        />
+        <Link href={`/dashboard/cautelas?status=${LoanStatus.ENTREGUE}`} legacyBehavior>
+          <a className="block cursor-pointer">
+            <DashboardStatCard
+              title="Cautelas Ativas"
+              value={activeLoansCount}
+              icon={ClipboardList}
+              description="Equipamentos atualmente emprestados"
+            />
+          </a>
+        </Link>
       </div>
       
       <div className="mt-8">

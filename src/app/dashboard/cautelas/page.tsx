@@ -2,6 +2,7 @@
 'use client';
 
 import * as React from 'react';
+import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -70,6 +71,9 @@ const ContactDisplay = ({ contactValue }: { contactValue: string }) => {
 export default function CautelasPage() {
   const { loans, officers, equipments, addLoan, updateLoanStatus, currentUser } = useStore();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+
+  const [displayedLoans, setDisplayedLoans] = React.useState<Loan[]>([]);
   const [isLoanDialogOpen, setIsLoanDialogOpen] = React.useState(false);
   // For return dialog
   const [isReturnDialogOpen, setIsReturnDialogOpen] = React.useState(false);
@@ -79,6 +83,16 @@ export default function CautelasPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const availableEquipments = equipments.filter(eq => eq.status === 'Disponível');
+  const statusFilter = searchParams.get('status');
+
+  React.useEffect(() => {
+    let filtered = [...loans];
+    if (statusFilter === LoanStatus.ENTREGUE) {
+      filtered = filtered.filter(loan => loan.status === LoanStatus.ENTREGUE);
+    }
+    // Default sort or any other sorting logic
+    setDisplayedLoans(filtered.sort((a, b) => parseISO(b.loanDate).getTime() - parseISO(a.loanDate).getTime()));
+  }, [loans, statusFilter]);
 
   const handleLoanFormSubmit = async (values: z.infer<typeof LoanSchema>) => {
     setIsSubmitting(true);
@@ -136,18 +150,27 @@ export default function CautelasPage() {
         }
       />
 
-      {loans.length === 0 ? (
+      {displayedLoans.length === 0 ? (
          <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed border-border rounded-lg">
             <ClipboardList className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold text-foreground mb-2">Nenhuma cautela registrada</h3>
-            <p className="text-muted-foreground mb-4">Comece registrando novas cautelas de equipamentos.</p>
-             <Button onClick={() => setIsLoanDialogOpen(true)}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Registrar Primeira Cautela
-            </Button>
+            {statusFilter === LoanStatus.ENTREGUE ? (
+                <>
+                    <h3 className="text-xl font-semibold text-foreground mb-2">Nenhuma cautela ativa encontrada</h3>
+                    <p className="text-muted-foreground mb-4">Não há cautelas com o status 'Entregue' no momento.</p>
+                </>
+            ) : (
+                <>
+                    <h3 className="text-xl font-semibold text-foreground mb-2">Nenhuma cautela registrada</h3>
+                    <p className="text-muted-foreground mb-4">Comece registrando novas cautelas de equipamentos.</p>
+                    <Button onClick={() => setIsLoanDialogOpen(true)}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Registrar Primeira Cautela
+                    </Button>
+                </>
+            )}
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-          {loans.map((loan) => {
+          {displayedLoans.map((loan) => {
             const officer = officers.find(o => o.id === loan.officerId);
             return (
             <Card key={loan.id} className="flex flex-col">
