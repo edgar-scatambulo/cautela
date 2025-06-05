@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { LoanForm } from './components/loan-form';
 import { useStore } from '@/lib/store';
 import { Loan, LoanStatus, PoliceOfficer, Equipment } from '@/lib/types';
-import { ClipboardList, PlusCircle, ArrowRightToLine, ArrowLeftFromLine, PackageSearch, User, CalendarDays, Clock } from 'lucide-react';
+import { ClipboardList, PlusCircle, ArrowLeftFromLine, PackageSearch, User, CalendarDays, Clock, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { LoanSchema } from '@/lib/schemas';
 import type { z } from 'zod';
@@ -28,10 +28,44 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 
-const getOfficerName = (officerId: string, officers: PoliceOfficer[]): string => {
-  const officer = officers.find(o => o.id === officerId);
-  return officer ? `${officer.name} (${officer.rank})` : 'Desconhecido';
+const ContactDisplay = ({ contactValue }: { contactValue: string }) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // Heuristic regex to identify strings that might be phone numbers
+  const phoneIndicatorRegex = /(\d{2,}\)?\s?\d{4,}-?\d{4,})/;
+
+  if (emailRegex.test(contactValue)) {
+    return (
+      <a href={`mailto:${contactValue}`} className="font-medium text-primary hover:underline ml-1">
+        {contactValue}
+      </a>
+    );
+  }
+
+  const cleanedPhone = contactValue.replace(/\D/g, ''); // Remove all non-digits
+  const isLikelyPhone = phoneIndicatorRegex.test(contactValue) && cleanedPhone.length >= 8;
+
+  if (isLikelyPhone) {
+    let whatsappNumber = cleanedPhone;
+    // Add '55' for Brazilian numbers if it's a common length (10 or 11 digits) and doesn't start with '55'
+    if ((whatsappNumber.length === 10 || whatsappNumber.length === 11) && !whatsappNumber.startsWith('55')) {
+      whatsappNumber = '55' + whatsappNumber;
+    }
+    
+    return (
+      <a
+        href={`https://web.whatsapp.com/send?phone=${whatsappNumber}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-medium text-primary hover:underline ml-1"
+      >
+        {contactValue}
+      </a>
+    );
+  }
+
+  return <span className="font-medium text-foreground ml-1">{contactValue}</span>;
 };
+
 
 export default function CautelasPage() {
   const { loans, officers, equipments, addLoan, updateLoanStatus, currentUser } = useStore();
@@ -113,7 +147,9 @@ export default function CautelasPage() {
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-          {loans.map((loan) => (
+          {loans.map((loan) => {
+            const officer = officers.find(o => o.id === loan.officerId);
+            return (
             <Card key={loan.id} className="flex flex-col">
               <CardHeader>
                 <div className="flex items-center justify-between mb-2">
@@ -127,10 +163,24 @@ export default function CautelasPage() {
                     {loan.status}
                   </span>
                 </div>
-                <CardDescription className="flex items-center text-sm">
-                  <User className="h-4 w-4 mr-2 text-muted-foreground" /> {getOfficerName(loan.officerId, officers)}
-                </CardDescription>
-                 <CardDescription className="flex items-center text-sm">
+                {officer ? (
+                  <>
+                    <CardDescription className="flex items-center text-sm">
+                      <User className="h-4 w-4 mr-2 text-muted-foreground" /> {officer.name} ({officer.rank})
+                    </CardDescription>
+                    {officer.functionalId && (
+                      <CardDescription className="flex items-center text-sm mt-1">
+                        <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <ContactDisplay contactValue={officer.functionalId} />
+                      </CardDescription>
+                    )}
+                  </>
+                ) : (
+                  <CardDescription className="flex items-center text-sm">
+                    <User className="h-4 w-4 mr-2 text-muted-foreground" /> Policial Desconhecido
+                  </CardDescription>
+                )}
+                 <CardDescription className="flex items-center text-sm mt-1">
                   <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" /> 
                   {format(parseISO(loan.loanDate), "dd/MM/yyyy", { locale: ptBR })} às {loan.loanTime}
                 </CardDescription>
@@ -174,7 +224,7 @@ export default function CautelasPage() {
                 )}
               </CardFooter>
             </Card>
-          ))}
+          )})}
         </div>
       )}
       {/* Return Confirmation Dialog */}
@@ -205,3 +255,4 @@ export default function CautelasPage() {
     </>
   );
 }
+
