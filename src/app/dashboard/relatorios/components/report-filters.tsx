@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -9,27 +10,29 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarIcon, Filter, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
 import type { PoliceOfficer } from '@/lib/types';
+import { LoanStatus } from '@/lib/types';
 
 interface ReportFiltersProps {
   officers: PoliceOfficer[];
-  onFilterChange: (filters: { dateRange?: DateRange; officerId?: string }) => void;
+  onFilterChange: (filters: { dateRange?: DateRange; officerId?: string; status?: string }) => void;
 }
 
 export function ReportFilters({ officers, onFilterChange }: ReportFiltersProps) {
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
   const [officerId, setOfficerId] = React.useState<string | undefined>(undefined);
+  const [status, setStatus] = React.useState<string | undefined>(undefined);
 
   const handleApplyFilters = () => {
-    onFilterChange({ dateRange, officerId });
+    onFilterChange({ dateRange, officerId, status });
   };
 
   return (
     <div className="mb-6 p-4 border rounded-lg bg-card shadow">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
         <div>
           <Label htmlFor="date-range" className="mb-1 block">Período da Cautela</Label>
           <Popover>
@@ -81,9 +84,23 @@ export function ReportFilters({ officers, onFilterChange }: ReportFiltersProps) 
               <SelectItem value="all">Todos os policiais</SelectItem>
               {officers.map((officer) => (
                 <SelectItem key={officer.id} value={officer.id}>
-                  {officer.name} ({officer.functionalId})
+                  {officer.name} ({officer.rank}) {/* Display rank instead of functionalId here for brevity */}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label htmlFor="status-select" className="mb-1 block">Status da Cautela</Label>
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger id="status-select">
+              <SelectValue placeholder="Todos os status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              <SelectItem value={LoanStatus.ENTREGUE}>{LoanStatus.ENTREGUE}</SelectItem>
+              <SelectItem value={LoanStatus.DEVOLVIDO}>{LoanStatus.DEVOLVIDO}</SelectItem>
             </SelectContent>
           </Select>
         </div>

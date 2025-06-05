@@ -4,7 +4,7 @@
 import React from 'react';
 import { PageHeader } from '@/components/page-header';
 import { useStore } from '@/lib/store';
-import { Loan, PoliceOfficer } from '@/lib/types';
+import { Loan, PoliceOfficer, LoanStatus } from '@/lib/types'; // Import LoanStatus
 import { ReportFilters } from './components/report-filters';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, User, CalendarDays, PackageSearch, Info, Printer } from 'lucide-react';
@@ -23,20 +23,20 @@ export default function RelatoriosPage() {
   const [filteredLoans, setFilteredLoans] = React.useState<Loan[]>([]);
 
   React.useEffect(() => {
-    setFilteredLoans([...loans].sort((a, b) => parseISO(b.loanDate).getTime() - parseISO(a.loanDate).getTime())); // Initialize and sort a copy
+    // Initialize with all loans sorted, also ensures we work with a copy
+    setFilteredLoans([...loans].sort((a, b) => parseISO(b.loanDate).getTime() - parseISO(a.loanDate).getTime()));
   }, [loans]);
 
-  const handleFilterChange = (filters: { dateRange?: DateRange; officerId?: string }) => {
-    let tempLoans = [...loans];
+  const handleFilterChange = (filters: { dateRange?: DateRange; officerId?: string; status?: string }) => {
+    let tempLoans = [...loans]; // Start with a fresh copy of all loans
 
     if (filters.dateRange?.from) {
       const fromDate = filters.dateRange.from;
-      const toDate = filters.dateRange.to || filters.dateRange.from; 
+      const toDate = filters.dateRange.to || filters.dateRange.from;
 
       tempLoans = tempLoans.filter(loan => {
         const loanDate = parseISO(loan.loanDate);
         if (!isValid(loanDate)) return false;
-        // Adjust toDate to include the whole day for range end
         const adjustedToDate = new Date(toDate);
         adjustedToDate.setHours(23, 59, 59, 999);
         return isWithinInterval(loanDate, { start: fromDate, end: adjustedToDate });
@@ -45,6 +45,10 @@ export default function RelatoriosPage() {
 
     if (filters.officerId && filters.officerId !== 'all') {
       tempLoans = tempLoans.filter(loan => loan.officerId === filters.officerId);
+    }
+
+    if (filters.status && filters.status !== 'all') {
+      tempLoans = tempLoans.filter(loan => loan.status === filters.status);
     }
     
     setFilteredLoans(tempLoans.sort((a, b) => parseISO(b.loanDate).getTime() - parseISO(a.loanDate).getTime()));
@@ -62,7 +66,7 @@ export default function RelatoriosPage() {
 
       <PageHeader
         title="Relatório de Cautelas"
-        description="Visualize todas as cautelas efetuadas com filtros por data e policial."
+        description="Visualize todas as cautelas efetuadas com filtros por data, policial e status."
         icon={FileText}
         actions={
           <Button onClick={handlePrint} variant="outline" className="print:hidden">
@@ -89,7 +93,7 @@ export default function RelatoriosPage() {
               <CardHeader>
                  <div className="flex items-center justify-end mb-2">
                   <span className={`px-2 py-0.5 text-xs rounded-full ${
-                    loan.status === 'Entregue' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100' :
+                    loan.status === LoanStatus.ENTREGUE ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100' :
                     'bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100'
                   }`}>
                     {loan.status}
@@ -102,7 +106,7 @@ export default function RelatoriosPage() {
                   <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" /> 
                   Data Cautela: {format(parseISO(loan.loanDate), "dd/MM/yyyy", { locale: ptBR })}
                 </CardDescription>
-                 {loan.status === 'Devolvido' && loan.actualReturnDate && (
+                 {loan.status === LoanStatus.DEVOLVIDO && loan.actualReturnDate && (
                     <CardDescription className="flex items-center text-sm">
                       <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" /> 
                       Data Devolução: {format(parseISO(loan.actualReturnDate), "dd/MM/yyyy", { locale: ptBR })}
@@ -136,4 +140,3 @@ export default function RelatoriosPage() {
     </>
   );
 }
-
