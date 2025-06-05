@@ -44,9 +44,10 @@ export function EquipmentForm({ onSubmit, defaultValues, isSubmitting, isEditing
     },
   });
 
-  const statusOptions = isEditing 
-    ? ['Disponível', 'Em Cautela', 'Manutenção', 'Baixado']
-    : ['Disponível', 'Manutenção'];
+  // Status 'Em Cautela' is managed by the loan system.
+  // 'Baixado' might be a final state not to be manually selected during general edit.
+  // Thus, only 'Disponível' and 'Manutenção' are manually selectable.
+  const statusOptions = ['Disponível', 'Manutenção'];
 
   return (
     <Form {...form}>
@@ -109,13 +110,28 @@ export function EquipmentForm({ onSubmit, defaultValues, isSubmitting, isEditing
           render={({ field }) => (
             <FormItem>
               <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select 
+                onValueChange={field.onChange} 
+                defaultValue={field.value}
+                // Disable status field if the equipment is currently 'Em Cautela' or 'Baixado'
+                // unless the current status is one of the editable options.
+                // This prevents changing status from 'Em Cautela' or 'Baixado' to 'Disponível' or 'Manutenção' here.
+                // This specific scenario might need more nuanced handling if specific transitions are allowed/disallowed.
+                disabled={isEditing && defaultValues?.status && !statusOptions.includes(defaultValues.status)}
+              >
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o status" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
+                  {/* If editing and current status is not in manual options (e.g. 'Em Cautela'), 
+                      add it as a disabled option to show the current status. */}
+                  {isEditing && defaultValues?.status && !statusOptions.includes(defaultValues.status) && (
+                    <SelectItem value={defaultValues.status} disabled>
+                      {defaultValues.status} (não editável aqui)
+                    </SelectItem>
+                  )}
                   {statusOptions.map((status) => (
                     <SelectItem key={status} value={status}>
                       {status}
@@ -123,6 +139,11 @@ export function EquipmentForm({ onSubmit, defaultValues, isSubmitting, isEditing
                   ))}
                 </SelectContent>
               </Select>
+              {isEditing && defaultValues?.status && !statusOptions.includes(defaultValues.status) && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Status como '{defaultValues.status}' são gerenciados por outras partes do sistema (ex: Cautelas para 'Em Cautela').
+                </p>
+              )}
               <FormMessage />
             </FormItem>
           )}
@@ -149,5 +170,3 @@ export function EquipmentForm({ onSubmit, defaultValues, isSubmitting, isEditing
     </Form>
   );
 }
-
-    
