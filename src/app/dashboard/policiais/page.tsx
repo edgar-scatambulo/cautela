@@ -325,10 +325,10 @@ export default function PoliciaisPage() {
                                   ))}
                                 </ul>
                             </TableCell>
-                            <TableCell>{format(parseISO(loan.loanDate), "dd/MM/yy HH:mm", { locale: ptBR })}</TableCell>
+                            <TableCell>{format(parseISO(loan.loanDate), "dd/MM/yy", { locale: ptBR })}</TableCell>
                             <TableCell>
                               {loan.actualReturnDate 
-                                ? format(parseISO(loan.actualReturnDate), "dd/MM/yy HH:mm", { locale: ptBR })
+                                ? format(parseISO(loan.actualReturnDate), "dd/MM/yy", { locale: ptBR })
                                 : (loan.expectedReturnDate ? `Prev: ${format(parseISO(loan.expectedReturnDate), "dd/MM/yy", { locale: ptBR })}` : 'N/A')}
                             </TableCell>
                             <TableCell>
