@@ -254,18 +254,17 @@ export default function CautelasPage() {
             <AlertDialogTitle>Confirmar Devolução</AlertDialogTitle>
             <AlertDialogDescription>
               Você está prestes a registrar a devolução dos equipamentos para a cautela do policial {selectedLoanForReturn && officers.find(o => o.id === selectedLoanForReturn.officerId)?.name}.
-              <div className="mt-4">
-                <Label htmlFor="returnObservation">Observações da Devolução (Opcional)</Label>
-                <Textarea
-                  id="returnObservation"
-                  value={returnObservation}
-                  onChange={(e) => setReturnObservation(e.target.value)}
-                  placeholder="Estado do equipamento, avarias, etc."
-                  className="mt-1"
-                />
-              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="space-y-2 py-2"> {/* Moved observation section here and adjusted class for spacing */}
+            <Label htmlFor="returnObservation">Observações da Devolução (Opcional)</Label>
+            <Textarea
+              id="returnObservation"
+              value={returnObservation}
+              onChange={(e) => setReturnObservation(e.target.value)}
+              placeholder="Estado do equipamento, avarias, etc."
+            />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setSelectedLoanForReturn(null)}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmReturn} className="bg-green-600 hover:bg-green-700">Confirmar Devolução</AlertDialogAction>
@@ -275,3 +274,4 @@ export default function CautelasPage() {
     </>
   );
 }
+
