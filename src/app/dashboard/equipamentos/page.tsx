@@ -148,7 +148,8 @@ export default function EquipamentosPage() {
                 <EquipmentForm 
                   onSubmit={handleFormSubmit} 
                   defaultValues={editingEquipment}
-                  isSubmitting={isSubmitting} 
+                  isSubmitting={isSubmitting}
+                  isEditing={!!editingEquipment}
                 />
               </DialogContent>
             </Dialog>
@@ -340,6 +341,8 @@ export default function EquipamentosPage() {
     </TooltipProvider>
   );
 }
+    
+
     
 
     

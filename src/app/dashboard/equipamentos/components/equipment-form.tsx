@@ -29,9 +29,10 @@ interface EquipmentFormProps {
   onSubmit: (values: z.infer<typeof EquipmentSchema>) => void;
   defaultValues?: Partial<Equipment>;
   isSubmitting?: boolean;
+  isEditing?: boolean;
 }
 
-export function EquipmentForm({ onSubmit, defaultValues, isSubmitting }: EquipmentFormProps) {
+export function EquipmentForm({ onSubmit, defaultValues, isSubmitting, isEditing }: EquipmentFormProps) {
   const form = useForm<z.infer<typeof EquipmentSchema>>({
     resolver: zodResolver(EquipmentSchema),
     defaultValues: {
@@ -42,6 +43,10 @@ export function EquipmentForm({ onSubmit, defaultValues, isSubmitting }: Equipme
       observations: defaultValues?.observations || "",
     },
   });
+
+  const statusOptions = isEditing 
+    ? ['Disponível', 'Em Cautela', 'Manutenção', 'Baixado']
+    : ['Disponível', 'Manutenção'];
 
   return (
     <Form {...form}>
@@ -111,7 +116,7 @@ export function EquipmentForm({ onSubmit, defaultValues, isSubmitting }: Equipme
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {['Disponível', 'Em Cautela', 'Manutenção', 'Baixado'].map((status) => (
+                  {statusOptions.map((status) => (
                     <SelectItem key={status} value={status}>
                       {status}
                     </SelectItem>
@@ -137,10 +142,12 @@ export function EquipmentForm({ onSubmit, defaultValues, isSubmitting }: Equipme
         />
         <div className="flex justify-end pt-4">
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? (defaultValues?.id ? "Salvando..." : "Adicionando...") : (defaultValues?.id ? "Salvar Alterações" : "Adicionar Equipamento")}
+            {isSubmitting ? (isEditing ? "Salvando..." : "Adicionando...") : (isEditing ? "Salvar Alterações" : "Adicionar Equipamento")}
           </Button>
         </div>
       </form>
     </Form>
   );
 }
+
+    
