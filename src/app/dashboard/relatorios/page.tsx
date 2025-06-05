@@ -20,10 +20,10 @@ const getOfficerName = (officerId: string, officers: PoliceOfficer[]): string =>
 
 export default function RelatoriosPage() {
   const { loans, officers } = useStore();
-  const [filteredLoans, setFilteredLoans] = React.useState<Loan[]>(loans);
+  const [filteredLoans, setFilteredLoans] = React.useState<Loan[]>([]);
 
   React.useEffect(() => {
-    setFilteredLoans(loans.sort((a, b) => parseISO(b.loanDate).getTime() - parseISO(a.loanDate).getTime())); // Initialize and sort
+    setFilteredLoans([...loans].sort((a, b) => parseISO(b.loanDate).getTime() - parseISO(a.loanDate).getTime())); // Initialize and sort a copy
   }, [loans]);
 
   const handleFilterChange = (filters: { dateRange?: DateRange; officerId?: string }) => {
