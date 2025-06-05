@@ -1,79 +1,59 @@
-/* public/print-styles.css */
 @media print {
-  html, body {
-    background-color: transparent !important; /* Garante fundo transparente, usando a cor do papel */
-    color: #000 !important; /* Texto preto */
+  body {
     font-family: 'Inter', sans-serif;
-    margin: 20px; /* Margem para layout de impressão */
-    -webkit-font-smoothing: antialiased; /* Melhora a renderização da fonte */
-    text-rendering: optimizeLegibility;
+    background-color: #fff !important; /* Ensure white background */
+    color: #000 !important; /* Ensure black text */
+    /* -webkit-print-color-adjust: exact; Removed as background should be transparent */
+    /* print-color-adjust: exact; Removed as background should be transparent */
   }
 
-  /* Remove todas as imagens de fundo e sombras */
-  * {
-    background-image: none !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
+  .print\:hidden {
+    display: none !important;
   }
 
   .page-header-print-title {
     display: block !important;
     text-align: center;
-    font-size: 22px; /* Ajuste no tamanho da fonte */
-    margin-bottom: 20px;
-    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.75rem; /* 28px */
+    font-weight: 700;
+    margin-bottom: 1.5rem; /* 24px */
     color: #000 !important;
-    background-color: transparent !important;
   }
 
-  .print-hidden {
-    display: none !important;
+  .card-print {
+    page-break-inside: avoid;
+    margin-bottom: 1rem;
+    border: none !important; /* Remove borders from cards */
+    padding: 1rem; /* Keep padding for content spacing */
+    background-color: #fff !important; /* Ensure white background for cards */
+    box-shadow: none !important; /* Ensure no shadow for cards */
+  }
+
+  .card-print .flex.items-center.justify-end.mb-2 span {
+    background-color: #eee !important; /* Light gray for status badge background */
+    color: #000 !important; /* Black text for status badge */
+    border: 1px solid #ccc !important; /* Light border for badge */
+    padding: 0.125rem 0.5rem !important; /* p-0.5 px-2 */
+  }
+
+  .card-print h4,
+  .card-print p,
+  .card-print ul,
+  .card-print li,
+  .card-print div {
+    color: #000 !important;
   }
   
-  .card-print {
-    background-color: transparent !important; /* Fundo do card transparente */
-    border: 1px solid #bbb !important; /* Borda um pouco mais escura para visibilidade */
-    page-break-inside: avoid;
-    margin-bottom: 15px;
-    padding: 10px;
+  .card-print .text-muted-foreground {
+    color: #333 !important; /* Darker gray for muted text */
   }
 
-  .card-print * {
-    color: #000 !important;
-    background-color: transparent !important; /* Elementos dentro do card também transparentes */
+  .card-print .font-semibold {
+    font-weight: 600 !important;
   }
 
-  /* Estilo para badges na impressão - sem fundo, borda leve */
-  .card-print span[class*="bg-yellow-100"],
-  .card-print span[class*="bg-green-100"],
-  .card-print span[class*="dark:bg-yellow-700"],
-  .card-print span[class*="dark:bg-green-700"] {
-    background-color: transparent !important;
-    color: #000 !important;
-    border: 1px solid #ddd !important; /* Borda bem clara */
-    padding: 1px 3px;
-    font-size: 0.75em; /* Um pouco menor */
-    border-radius: 3px;
-    display: inline-block; /* Garante que o padding seja aplicado corretamente */
-  }
-
-  .card-print a {
-    color: #000 !important;
-    text-decoration: underline !important;
-  }
-
-  /* Opcional: mostrar URL de links - pode ser útil ou poluir, desabilitado por padrão */
-  /* .card-print a[href]::after {
-    content: " (" attr(href) ")";
-    font-size: 0.9em;
-    color: #555;
-  } */
-
-  /* Evitar quebras de página indesejadas dentro de elementos de texto comuns */
-  .card-print p, .card-print li, .card-print h4 {
-    page-break-inside: avoid;
-  }
-  .card-print ul {
-    padding-left: 20px; /* Garante que as listas fiquem indentadas */
+  /* Hide scrollbars in print */
+  ::-webkit-scrollbar {
+    display: none;
   }
 }
