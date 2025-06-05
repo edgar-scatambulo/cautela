@@ -100,12 +100,12 @@ export default function RelatoriosPage() {
                 </CardDescription>
                  <CardDescription className="flex items-center text-sm">
                   <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" /> 
-                  Data Cautela: {format(parseISO(loan.loanDate), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  Data Cautela: {format(parseISO(loan.loanDate), "dd/MM/yyyy", { locale: ptBR })}
                 </CardDescription>
                  {loan.status === 'Devolvido' && loan.actualReturnDate && (
                     <CardDescription className="flex items-center text-sm">
                       <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" /> 
-                      Data Devolução: {format(parseISO(loan.actualReturnDate), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                      Data Devolução: {format(parseISO(loan.actualReturnDate), "dd/MM/yyyy", { locale: ptBR })}
                     </CardDescription>
                   )}
               </CardHeader>
@@ -136,3 +136,4 @@ export default function RelatoriosPage() {
     </>
   );
 }
+
