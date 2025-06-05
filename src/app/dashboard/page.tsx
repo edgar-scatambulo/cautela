@@ -16,6 +16,7 @@ import { EquipmentForm } from './equipamentos/components/equipment-form';
 import { useToast } from '@/hooks/use-toast';
 import { LoanSchema, EquipmentSchema } from '@/lib/schemas';
 import type { z } from 'zod';
+import type { Equipment } from '@/lib/types';
 
 export default function DashboardPage() {
   const { currentUser, equipments, officers, loans, addLoan, addEquipment } = useStore();
@@ -115,7 +116,7 @@ export default function DashboardPage() {
                   <PlusCircle className="mr-2 h-5 w-5 text-primary" />
                   Nova Cautela
                 </CardTitle>
-                <CardDescription>Registrar um novo empréstimo de equipamento.</CardDescription>
+                <CardDescription>Registrar nova cautela.</CardDescription>
               </CardHeader>
               <CardContent>
                 <DialogTrigger asChild>
