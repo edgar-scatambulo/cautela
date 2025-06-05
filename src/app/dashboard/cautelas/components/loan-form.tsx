@@ -134,7 +134,7 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
                               />
                             </FormControl>
                             <FormLabel className="text-sm font-normal cursor-pointer w-full">
-                              {equipment.brand} (Patrimônio: {equipment.serialNumber})
+                              (Patrimônio: {equipment.serialNumber}) {equipment.brand} 
                             </FormLabel>
                           </FormItem>
                         )
@@ -154,7 +154,7 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
             control={form.control}
             name="loanDate"
             render={({ field }) => (
-              <FormItem> {/* Removido className="flex flex-col" */}
+              <FormItem>
                 <FormLabel>Data da Cautela</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
