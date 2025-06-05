@@ -177,7 +177,7 @@ export default function EquipamentosPage() {
                     {equipment.status}
                   </Badge>
                 </div>
-                <CardTitle className="text-lg font-semibold font-headline">{equipment.brand}</CardTitle>
+                <CardTitle className="text-lg font-semibold font-headline">{equipment.brand}{equipment.model ? ` ${equipment.model}` : ''}</CardTitle>
                 <CardDescription>Tipo: {equipment.type}</CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
@@ -232,7 +232,7 @@ export default function EquipamentosPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o equipamento <span className="font-semibold">{equipmentToDelete?.brand} (Patrimônio: {equipmentToDelete?.serialNumber})</span>? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir o equipamento <span className="font-semibold">{equipmentToDelete?.brand}{equipmentToDelete?.model ? ` ${equipmentToDelete.model}`: ''} (Patrimônio: {equipmentToDelete?.serialNumber})</span>? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -252,7 +252,7 @@ export default function EquipamentosPage() {
             </DialogTitle>
             {selectedEquipmentForDetails && (
                  <DialogDescription>
-                    {selectedEquipmentForDetails.brand} (Patrimônio: {selectedEquipmentForDetails.serialNumber})
+                    {selectedEquipmentForDetails.brand}{selectedEquipmentForDetails.model ? ` ${selectedEquipmentForDetails.model}` : ''} (Patrimônio: {selectedEquipmentForDetails.serialNumber})
                 </DialogDescription>
             )}
           </DialogHeader>
@@ -262,17 +262,20 @@ export default function EquipamentosPage() {
                 <div>
                   <h3 className="text-lg font-semibold mb-2 font-headline">Informações Gerais</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                    <p><strong className="text-muted-foreground">Tipo:</strong> {selectedEquipmentForDetails.type}</p>
-                    <p><strong className="text-muted-foreground">Marca / Modelo:</strong> {selectedEquipmentForDetails.brand}</p>
-                    <p><strong className="text-muted-foreground">Patrimônio:</strong> {selectedEquipmentForDetails.serialNumber}</p>
-                    <p><strong className="text-muted-foreground">Status Atual:</strong> <Badge className={`${
-                      selectedEquipmentForDetails.status === 'Disponível' ? 'bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100' :
-                      selectedEquipmentForDetails.status === 'Em Cautela' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100' :
-                      selectedEquipmentForDetails.status === 'Manutenção' ? 'bg-orange-100 text-orange-700 dark:bg-orange-700 dark:text-orange-100' :
-                      'bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100'
-                    }`}>{selectedEquipmentForDetails.status}</Badge></p>
-                    {selectedEquipmentForDetails.observations && <p className="md:col-span-2"><strong className="text-muted-foreground">Observações:</strong> {selectedEquipmentForDetails.observations}</p>}
-                    <p className="text-xs text-muted-foreground md:col-span-2">Cadastrado em: {format(parseISO(selectedEquipmentForDetails.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+                    <div><strong className="text-muted-foreground">Tipo:</strong> {selectedEquipmentForDetails.type}</div>
+                    <div><strong className="text-muted-foreground">Marca / Modelo:</strong> {selectedEquipmentForDetails.brand}{selectedEquipmentForDetails.model ? ` ${selectedEquipmentForDetails.model}` : ''}</div>
+                    <div><strong className="text-muted-foreground">Patrimônio:</strong> {selectedEquipmentForDetails.serialNumber}</div>
+                    <div> {/* Changed p to div here */}
+                      <strong className="text-muted-foreground">Status Atual:</strong>{' '}
+                      <Badge className={`${
+                        selectedEquipmentForDetails.status === 'Disponível' ? 'bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100' :
+                        selectedEquipmentForDetails.status === 'Em Cautela' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100' :
+                        selectedEquipmentForDetails.status === 'Manutenção' ? 'bg-orange-100 text-orange-700 dark:bg-orange-700 dark:text-orange-100' :
+                        'bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100'
+                      }`}>{selectedEquipmentForDetails.status}</Badge>
+                    </div>
+                    {selectedEquipmentForDetails.observations && <div className="md:col-span-2"><strong className="text-muted-foreground">Observações:</strong> {selectedEquipmentForDetails.observations}</div>}
+                    <div className="text-xs text-muted-foreground md:col-span-2">Cadastrado em: {format(parseISO(selectedEquipmentForDetails.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</div>
                   </div>
                 </div>
 
