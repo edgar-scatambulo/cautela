@@ -25,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { SystemUserSchema } from '@/lib/schemas';
 import type { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function UsuariosPage() {
   const { users, addUser, updateUser, deleteUser, currentUser } = useStore();
@@ -102,7 +103,7 @@ export default function UsuariosPage() {
   };
   
   return (
-    <>
+    <TooltipProvider>
       <PageHeader
         title="Gerenciamento de Usuários"
         description="Cadastre e gerencie os usuários do sistema."
@@ -165,12 +166,28 @@ export default function UsuariosPage() {
               </CardContent>
               <CardFooter className="border-t pt-4">
                 <div className="flex w-full justify-end space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => openEditDialog(user)}>
-                    <Edit3 className="mr-1 h-4 w-4" /> Editar
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => openDeleteDialog(user)} disabled={currentUser?.id === user.id}>
-                    <Trash2 className="mr-1 h-4 w-4" /> Excluir
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon" onClick={() => openEditDialog(user)}>
+                        <Edit3 className="h-4 w-4" />
+                        <span className="sr-only">Editar</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Editar</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="destructive" size="icon" onClick={() => openDeleteDialog(user)} disabled={currentUser?.id === user.id}>
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Excluir</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Excluir</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </CardFooter>
             </Card>
@@ -192,6 +209,7 @@ export default function UsuariosPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </TooltipProvider>
   );
 }
+
