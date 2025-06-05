@@ -273,7 +273,7 @@ export default function PoliciaisPage() {
                             <TableCell>
                                 <ul className="list-disc list-inside text-xs">
                                   {loan.equipment.map(eq => (
-                                    <li key={eq.id}>{eq.brand} (Patrimônio: {eq.serialNumber})</li>
+                                    <li key={eq.id}>{eq.brand} ({eq.serialNumber})</li>
                                   ))}
                                 </ul>
                             </TableCell>
