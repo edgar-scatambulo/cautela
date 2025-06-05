@@ -50,7 +50,6 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
       equipmentIds: defaultValues?.equipmentIds || [],
       loanDate: defaultValues?.loanDate || format(new Date(), "yyyy-MM-dd"),
       loanTime: defaultValues?.loanTime || format(new Date(), "HH:mm"),
-      // expectedReturnDate: defaultValues?.expectedReturnDate || "", // Campo removido
       loanObservation: defaultValues?.loanObservation || "",
     },
   });
@@ -73,7 +72,7 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
                 <SelectContent>
                   {officers.map((officer) => (
                     <SelectItem key={officer.id} value={officer.id}>
-                      {officer.name} - {officer.rank} {/* Display name (Nome de Guerra) and rank */}
+                      {officer.name} - {officer.rank}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -155,7 +154,7 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
             control={form.control}
             name="loanDate"
             render={({ field }) => (
-              <FormItem className="flex flex-col">
+              <FormItem> {/* Removido className="flex flex-col" */}
                 <FormLabel>Data da Cautela</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -203,8 +202,6 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
             )}
           />
         </div>
-
-        {/* Campo expectedReturnDate removido daqui */}
 
         <FormField
           control={form.control}
