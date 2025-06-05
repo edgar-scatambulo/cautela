@@ -172,7 +172,7 @@ export default function DashboardPage() {
                   <ArrowLeftFromLine className="mr-2 h-5 w-5 text-primary" />
                   Registrar Devolução
                 </CardTitle>
-                <CardDescription>Registrar a devolução de equipamentos.</CardDescription>
+                <CardDescription>Registrar devolução de equipamentos.</CardDescription>
               </CardHeader>
               <CardContent>
                 <DialogTrigger asChild>
