@@ -235,7 +235,7 @@ export default function DashboardPage() {
                     <FileText className="mr-2 h-5 w-5 text-primary" />
                     Ver Relatórios
                   </CardTitle>
-                  <CardDescription>Acessar histórico de cautelas.</CardDescription>
+                  <CardDescription>Histórico de cautelas.</CardDescription>
                 </CardHeader>
                 <CardContent>
                    <Button className="w-full">
