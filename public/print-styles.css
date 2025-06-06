@@ -1,71 +1,35 @@
-
 @media print {
   body {
-    margin: 10mm 15mm; /* Top/Bottom, Left/Right */
-    font-size: 9pt;
-    color: #000000 !important;
-    background-color: #ffffff !important;
-    -webkit-print-color-adjust: exact !important; /* Ensures background colors for badges print */
-    print-color-adjust: exact !important;
+    font-size: 10pt;
+    margin: 0.5in; /* Basic A4 margins */
+    -webkit-print-color-adjust: exact !important; /* For Chrome/Safari */
+    print-color-adjust: exact !important; /* Standard */
+    background-color: #ffffff !important; /* Force white background for print */
   }
 
-  @page {
-    size: A4;
-    margin: 10mm 15mm; /* Consistent with body margin for better control */
-  }
-
-  /* Hide elements not meant for printing. `print:hidden` in Tailwind should also work. */
-  .print-hidden { /* Custom class for elements to hide explicitly, if print:hidden isn't enough */
-    display: none !important;
-  }
-
-  /* Page header specific for print */
   .page-header-print-title {
-    font-size: 16pt !important;
-    text-align: center !important;
-    margin-bottom: 8mm !important;
-    color: #000 !important;
-    font-weight: bold;
+    display: block !important;
+    text-align: center;
+    font-size: 18pt;
+    margin-bottom: 20px;
   }
 
-  /* Card styling for print */
   .card-print {
-    page-break-inside: avoid !important; /* Avoid breaking a card across pages */
-    border: 1px solid #cccccc !important; /* Lighter border for print */
+    page-break-inside: avoid;
+    border: 1px solid #ddd !important; /* Light border for cards */
     box-shadow: none !important;
-    /* Tailwind print:p-2 handles padding */
-    /* Tailwind print:mb-3 handles margin */
-  }
-  
-  /* Ensure badge background colors print if Tailwind's own classes don't force it */
-  /* These specific overrides might be needed if Tailwind's `print:bg-xxx` isn't enough due to browser behavior */
-  .print-badge-entregue { /* Custom class can be added to badge span if needed */
-    background-color: #FEF9C3 !important; 
-    color: #713F12 !important; 
-  }
-  .print-badge-devolvido { /* Custom class can be added to badge span if needed */
-    background-color: #DCFCE7 !important; 
-    color: #166534 !important; 
-  }
-  
-  /* Remove default list styling if print:list-none doesn't catch everything */
-  .card-print ul {
-    list-style-type: none !important;
-    padding-left: 0 !important;
+    margin-bottom: 10px !important;
+    padding: 8px !important;
+    background-color: #ffffff !important; /* Ensure cards are also white for print */
   }
 
-  /* General text color for print consistency, if not overridden by more specific print classes */
-  .card-print .text-muted-foreground {
-    color: #555555 !important; /* Darker gray for print for better readability */
+  /* Ensure background colors for badges print */
+  .print-badge-entregue {
+    background-color: #fef9c3 !important; /* Tailwind yellow-100 */
+    color: #b45309 !important; /* Tailwind yellow-700 */
   }
-   .card-print .text-foreground {
-    color: #000000 !important;
+  .print-badge-devolvido {
+    background-color: #dcfce7 !important; /* Tailwind green-100 */
+    color: #15803d !important; /* Tailwind green-700 */
   }
-
-  /* Optional: uncomment to hide all icons in cards if they take too much space or are not essential for print */
-  /*
-  .card-print svg { 
-    display: none !important; 
-  }
-  */
 }
