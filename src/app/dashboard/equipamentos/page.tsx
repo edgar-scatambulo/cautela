@@ -310,10 +310,10 @@ export default function EquipamentosPage() {
                         {equipmentLoanHistory.map(loan => (
                           <TableRow key={loan.id}>
                             <TableCell className="font-medium">{getOfficerNameLocal(loan.officerId, officers)}</TableCell>
-                            <TableCell>{format(parseISO(loan.loanDate), "dd/MM/yy HH:mm", { locale: ptBR })}</TableCell>
+                            <TableCell>{format(parseISO(loan.loanDate), "dd/MM/yy", { locale: ptBR })}</TableCell>
                             <TableCell>
                               {loan.actualReturnDate 
-                                ? format(parseISO(loan.actualReturnDate), "dd/MM/yy HH:mm", { locale: ptBR })
+                                ? format(parseISO(loan.actualReturnDate), "dd/MM/yy", { locale: ptBR })
                                 : 'N/A'}
                             </TableCell>
                             <TableCell>
