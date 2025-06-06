@@ -16,8 +16,8 @@
     --secondary-foreground: 224 71% 10%; /* Dark text on secondary */
     --muted: 216 65% 85%; /* Muted version of background */
     --muted-foreground: 220 45% 40%; /* Darker muted text */
-    --accent: 0 0% 100%; /* White (formerly Analogous purple #A214FF) */
-    --accent-foreground: 224 71% 10%; /* Dark text for contrast with white accent */
+    --accent: 218 66% 88%; /* Light blue #cedcf5 (formerly White) */
+    --accent-foreground: 224 71% 10%; /* Dark text for contrast with light blue accent */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 216 60% 80%; /* Border color related to background */
