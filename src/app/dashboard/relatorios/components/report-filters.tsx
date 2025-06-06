@@ -107,7 +107,7 @@ export function ReportFilters({ officers, onFilterChange }: ReportFiltersProps) 
         </div>
 
         <div>
-          <Label htmlFor="patrimony-input" className="mb-1 block">Patrimônio do Equipamento</Label>
+          <Label htmlFor="patrimony-input" className="mb-1 block">Patrimônio</Label>
           <Input
             id="patrimony-input"
             placeholder="Digite o patrimônio"
