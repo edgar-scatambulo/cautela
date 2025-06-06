@@ -5,7 +5,7 @@ import * as React from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as ShadDialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -144,6 +144,9 @@ export default function EquipamentosPage() {
               <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>{editingEquipment ? 'Editar Equipamento' : 'Adicionar Novo Equipamento'}</DialogTitle>
+                  <ShadDialogDescription>
+                    {editingEquipment ? 'Modifique os detalhes do equipamento abaixo.' : 'Preencha os detalhes do novo equipamento abaixo.'}
+                  </ShadDialogDescription>
                 </DialogHeader>
                 <EquipmentForm 
                   onSubmit={handleFormSubmit} 
@@ -262,9 +265,9 @@ export default function EquipamentosPage() {
               Detalhes do Equipamento
             </DialogTitle>
             {selectedEquipmentForDetails && (
-                 <DialogDescription>
-                    {selectedEquipmentForDetails.brand}{selectedEquipmentForDetails.model ? ` ${selectedEquipmentForDetails.model}` : ''} (Patrimônio: {selectedEquipmentForDetails.serialNumber})
-                </DialogDescription>
+                 <ShadDialogDescription>
+                    Informações detalhadas sobre {selectedEquipmentForDetails.brand}{selectedEquipmentForDetails.model ? ` ${selectedEquipmentForDetails.model}` : ''} (Patrimônio: {selectedEquipmentForDetails.serialNumber}).
+                </ShadDialogDescription>
             )}
           </DialogHeader>
           {selectedEquipmentForDetails && (

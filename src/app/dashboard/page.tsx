@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription as ShadDialogDescription } from '@/components/ui/dialog';
 import { LoanForm } from './cautelas/components/loan-form';
 import { useToast } from '@/hooks/use-toast';
 import { LoanSchema } from '@/lib/schemas';
@@ -148,6 +148,7 @@ export default function DashboardPage() {
             <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Registrar Nova Cautela</DialogTitle>
+                <ShadDialogDescription>Preencha os dados abaixo para registrar uma nova cautela de equipamento.</ShadDialogDescription>
               </DialogHeader>
               <LoanForm 
                 onSubmit={handleLoanFormSubmit} 
@@ -185,6 +186,7 @@ export default function DashboardPage() {
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Registrar Devolução de Equipamento</DialogTitle>
+                <ShadDialogDescription>Selecione a cautela ativa e, opcionalmente, adicione observações para registrar a devolução.</ShadDialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">

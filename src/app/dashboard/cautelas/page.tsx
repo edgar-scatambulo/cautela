@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription as ShadDialogDescription } from '@/components/ui/dialog';
 import { LoanForm } from './components/loan-form';
 import { useStore } from '@/lib/store';
 import { Loan, LoanStatus, PoliceOfficer, Equipment } from '@/lib/types';
@@ -138,6 +138,7 @@ export default function CautelasPage() {
             <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Registrar Nova Cautela</DialogTitle>
+                <ShadDialogDescription>Preencha os dados abaixo para registrar uma nova cautela de equipamento.</ShadDialogDescription>
               </DialogHeader>
               <LoanForm 
                 onSubmit={handleLoanFormSubmit} 
@@ -256,7 +257,7 @@ export default function CautelasPage() {
               Você está prestes a registrar a devolução dos equipamentos para a cautela do policial {selectedLoanForReturn && officers.find(o => o.id === selectedLoanForReturn.officerId)?.name}.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="space-y-2 py-2"> {/* Moved observation section here and adjusted class for spacing */}
+          <div className="space-y-2 py-2">
             <Label htmlFor="returnObservation">Observações da Devolução (Opcional)</Label>
             <Textarea
               id="returnObservation"

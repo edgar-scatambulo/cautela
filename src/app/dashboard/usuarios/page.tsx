@@ -5,7 +5,7 @@ import * as React from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription as ShadDialogDescription } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -118,6 +118,9 @@ export default function UsuariosPage() {
             <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>{editingUser ? 'Editar Usuário' : 'Adicionar Novo Usuário'}</DialogTitle>
+                <ShadDialogDescription>
+                  {editingUser ? 'Modifique os dados do usuário abaixo.' : 'Preencha os dados do novo usuário abaixo.'}
+                </ShadDialogDescription>
               </DialogHeader>
               <UserForm 
                 onSubmit={handleFormSubmit} 

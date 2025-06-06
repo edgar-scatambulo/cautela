@@ -5,7 +5,7 @@ import * as React from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription as ShadDialogDescription, DialogFooter } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -162,6 +162,9 @@ export default function PoliciaisPage() {
               <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>{editingOfficer ? 'Editar Dados do Policial' : 'Adicionar Novo Policial'}</DialogTitle>
+                  <ShadDialogDescription>
+                     {editingOfficer ? 'Modifique os dados do policial abaixo.' : 'Preencha os dados do novo policial abaixo.'}
+                  </ShadDialogDescription>
                 </DialogHeader>
                 <PoliceOfficerForm 
                   onSubmit={handleFormSubmit} 
@@ -282,9 +285,9 @@ export default function PoliciaisPage() {
               Detalhes do Policial
             </DialogTitle>
             {selectedOfficerForDetails && (
-                 <DialogDescription>
-                    {selectedOfficerForDetails.name} - {selectedOfficerForDetails.rank}
-                </DialogDescription>
+                 <ShadDialogDescription>
+                    Informações detalhadas sobre {selectedOfficerForDetails.name} - {selectedOfficerForDetails.rank}.
+                </ShadDialogDescription>
             )}
           </DialogHeader>
           {selectedOfficerForDetails && (
