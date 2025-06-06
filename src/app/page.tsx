@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogIn } from "lucide-react";
@@ -18,7 +19,7 @@ export default function LandingPage() {
         </CardHeader>
         <CardContent className="flex flex-col items-center space-y-6">
           <p className="text-center text-foreground">
-            Bem-vindo ao Cautela Digital. Acesse sua conta para gerenciar equipamentos, policiais e cautelas de forma eficiente e segura.
+            Desenvolvido por: Sd. Scatambulo
           </p>
           <Link href="/login" legacyBehavior>
             <Button size="lg" className="w-full">
