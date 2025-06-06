@@ -23,7 +23,7 @@ export default function RelatoriosPage() {
   const [filteredLoans, setFilteredLoans] = React.useState<Loan[]>([]);
 
   React.useEffect(() => {
-    setFilteredLoans([...loans].sort((a, b) => parseISO(b.loanDate).getTime() - parseISO(a.loanDate).getTime()));
+    setFilteredLoans([...loans].sort((a, b) => new Date(b.loanDate + "T" + b.loanTime).getTime() - new Date(a.loanDate + "T" + a.loanTime).getTime()));
   }, [loans]);
 
   const handleFilterChange = (filters: { dateRange?: DateRange; officerId?: string; status?: string; patrimony?: string }) => {
@@ -59,7 +59,7 @@ export default function RelatoriosPage() {
       );
     }
     
-    setFilteredLoans(tempLoans.sort((a, b) => parseISO(b.loanDate).getTime() - parseISO(a.loanDate).getTime()));
+    setFilteredLoans(tempLoans.sort((a, b) => new Date(b.loanDate + "T" + b.loanTime).getTime() - new Date(a.loanDate + "T" + a.loanTime).getTime()));
   };
 
   const handlePrint = () => {
@@ -112,12 +112,12 @@ export default function RelatoriosPage() {
                 </CardDescription>
                  <CardDescription className="flex items-center text-sm">
                   <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" /> 
-                  Data Cautela: {format(parseISO(loan.loanDate), "dd/MM/yyyy", { locale: ptBR })}
+                  Data Cautela: {format(parseISO(loan.loanDate), "dd/MM/yyyy", { locale: ptBR })} às {loan.loanTime}
                 </CardDescription>
-                 {loan.status === LoanStatus.DEVOLVIDO && loan.actualReturnDate && (
+                 {loan.status === LoanStatus.DEVOLVIDO && loan.actualReturnDate && loan.actualReturnTime && (
                     <CardDescription className="flex items-center text-sm">
                       <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" /> 
-                      Data Devolução: {format(parseISO(loan.actualReturnDate), "dd/MM/yyyy", { locale: ptBR })}
+                      Data Devolução: {format(parseISO(loan.actualReturnDate), "dd/MM/yyyy", { locale: ptBR })} às {loan.actualReturnTime}
                     </CardDescription>
                   )}
               </CardHeader>
