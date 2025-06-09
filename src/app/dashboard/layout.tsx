@@ -133,7 +133,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             <UserProfileDropdown />
           </header>
-          <main className="flex-1 overflow-y-auto p-6">
+          <main className="flex-1 overflow-y-auto p-6 print:overflow-visible">
             {children}
           </main>
         </SidebarInset>
