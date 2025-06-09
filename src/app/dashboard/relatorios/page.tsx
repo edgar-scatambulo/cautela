@@ -108,12 +108,12 @@ export default function RelatoriosPage() {
                         </CardDescription>
                         <CardDescription className="flex items-center text-sm mt-0.5 print:text-xs print:font-normal print:text-black print:mt-px">
                           <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground print:w-3 print:h-3 print:mr-1" /> 
-                          Cautela: {format(parseISO(loan.loanDate), "dd/MM/yy 'às' HH:mm", { locale: ptBR })}
+                          Cautela: {format(parseISO(loan.loanDate), "dd/MM/yy", { locale: ptBR })} às {loan.loanTime}
                         </CardDescription>
                         {loan.status === LoanStatus.DEVOLVIDO && loan.actualReturnDate && loan.actualReturnTime && (
                             <CardDescription className="flex items-center text-sm mt-0.5 print:text-xs print:font-normal print:text-black print:mt-px">
                               <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground print:w-3 print:h-3 print:mr-1" /> 
-                              Devolução: {format(parseISO(loan.actualReturnDate), "dd/MM/yy 'às' HH:mm", { locale: ptBR })}
+                              Devolução: {format(parseISO(loan.actualReturnDate), "dd/MM/yy", { locale: ptBR })} às {loan.actualReturnTime}
                             </CardDescription>
                           )}
                     </div>
@@ -151,9 +151,9 @@ export default function RelatoriosPage() {
               {/* Print rendering */}
               <div className="hidden print:block print:pt-3 page-break-inside-avoid">
                 <p className="print:text-base print:font-bold">Policial Responsável: <span className="print:font-normal">{getOfficerName(loan.officerId, officers)}</span></p>
-                <p className="print:text-sm">Data da Cautela: <span className="print:font-normal">{format(parseISO(loan.loanDate), "dd/MM/yy 'às' HH:mm", { locale: ptBR })}</span></p>
+                <p className="print:text-sm">Data da Cautela: <span className="print:font-normal">{format(parseISO(loan.loanDate), "dd/MM/yy", { locale: ptBR })} às {loan.loanTime}</span></p>
                 {loan.status === LoanStatus.DEVOLVIDO && loan.actualReturnDate && loan.actualReturnTime && (
-                  <p className="print:text-sm">Data da Devolução: <span className="print:font-normal">{format(parseISO(loan.actualReturnDate), "dd/MM/yy 'às' HH:mm", { locale: ptBR })}</span></p>
+                  <p className="print:text-sm">Data da Devolução: <span className="print:font-normal">{format(parseISO(loan.actualReturnDate), "dd/MM/yy", { locale: ptBR })} às {loan.actualReturnTime}</span></p>
                 )}
                 <p className="print:text-sm">Status da Cautela: <span className="print:font-normal">{loan.status}</span></p>
               
