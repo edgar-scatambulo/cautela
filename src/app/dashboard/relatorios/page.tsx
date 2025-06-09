@@ -150,7 +150,7 @@ export default function RelatoriosPage() {
 
               {/* Print rendering */}
               <div className="hidden print:block print:pt-3 page-break-inside-avoid">
-                <p className="print:text-base print:font-bold">Policial Responsável: <span className="print:font-normal">{getOfficerName(loan.officerId, officers)}</span></p>
+                <p className="print:text-base print:font-bold print:mb-1">Policial Responsável: <span className="print:font-normal">{getOfficerName(loan.officerId, officers)}</span></p>
                 <p className="print:text-sm">Data da Cautela: <span className="print:font-normal">{format(parseISO(loan.loanDate), "dd/MM/yy", { locale: ptBR })} às {loan.loanTime}</span></p>
                 {loan.status === LoanStatus.DEVOLVIDO && loan.actualReturnDate && loan.actualReturnTime && (
                   <p className="print:text-sm">Data da Devolução: <span className="print:font-normal">{format(parseISO(loan.actualReturnDate), "dd/MM/yy", { locale: ptBR })} às {loan.actualReturnTime}</span></p>
