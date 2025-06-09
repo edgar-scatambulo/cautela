@@ -1,175 +1,232 @@
 
 @media print {
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    font-family: 'Inter', sans-serif;
+    background-color: #ffffff !important; /* Ensure white background for print */
+    color: #000000 !important;
+  }
+
   @page {
     size: A4;
-    margin: 15mm; /* Reduzido para dar mais espaço ao conteúdo */
+    margin: 0.75in; /* Standard A4 margins */
   }
 
-  body {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-    background-color: white !important; /* Garante fundo branco para economizar tinta */
-    color: black !important; /* Garante texto preto */
-    font-size: 10pt; /* Tamanho de fonte base para impressão */
-  }
-
-  /* Esconde elementos gerais não desejados na impressão do relatório de cautelas */
-  .page-header:not(.page-header-print-title),
-  .print\:hidden { /* Mantém a utilidade do Tailwind */
+  /* General print utilities */
+  .print-hidden {
     display: none !important;
   }
-  
-  .page-header-print-title { /* Título específico para o relatório geral */
+  .print-block {
     display: block !important;
+  }
+  .page-break-before {
+    page-break-before: always !important;
+  }
+  .page-break-after {
+    page-break-after: always !important;
+  }
+  .page-break-inside-avoid {
+    page-break-inside: avoid !important;
+  }
+
+  /* Relatório de Cautelas Page Specific Styles */
+  .page-header-print-title {
+    display: block !important; /* Ensure title is visible for print */
     text-align: center;
-    font-size: 18pt; /* Ajustado para 18pt */
+    font-size: 1.5rem; /* Adjust as needed */
+    margin-bottom: 1rem;
+    font-family: var(--font-headline), sans-serif; /* Use theme font */
+  }
+  
+  .print-report-card {
+    border: 1px solid #ccc;
+    padding: 8px;
+    margin-bottom: 10px;
+    background-color: #ffffff !important; /* Ensure white background for cards */
+  }
+
+  .print-report-card h4 {
+    font-size: 10pt;
     font-weight: bold;
-    margin-bottom: 10mm; /* Ajustado para 10mm */
   }
-
-  .card-print, .print-report-item { /* Para os itens do relatório de cautelas geral */
-    page-break-inside: avoid;
-    border: 1px solid #ccc !important; /* Borda mais sutil para impressão */
-    padding: 3mm !important; /* Espaçamento interno */
-    margin-bottom: 5mm !important; /* Espaço entre itens */
-    background-color: white !important; /* Garante fundo branco para o card */
-  }
-  
-  .print-report-item p, .print-report-item ul, .print-report-item h4 {
-    font-size: 10pt !important; /* Ajusta o tamanho da fonte para consistência */
-    margin-bottom: 1mm !important; /* Espaçamento sutil entre parágrafos */
-  }
-  
-  .print-report-item h4 {
-      margin-top: 2mm !important;
-  }
-
-  .print-report-item ul {
-    padding-left: 5mm !important; /* Recuo para listas */
+  .print-report-card p, .print-report-card li {
+    font-size: 9pt;
   }
 
   .print-badge-entregue {
-    background-color: #fff3cd !important; /* Amarelo claro */
-    color: #664d03 !important; /* Texto escuro */
-    border: 1px solid #ffeeba !important;
-    padding: 0.5mm 1.5mm !important;
-    border-radius: 0.25rem !important;
-    font-size: 0.8em !important;
-    display: inline-block !important;
-    -webkit-print-color-adjust: exact; 
-    print-color-adjust: exact;
+    background-color: #fff3cd !important; /* Example: Light Yellow */
+    color: #664d03 !important; /* Example: Dark Yellow text */
+    border: 1px solid #ffe69c !important;
+    padding: 1px 3px;
+    font-size: 7pt;
+    border-radius: 3px;
   }
-
+  
   .print-badge-devolvido {
-    background-color: #d1e7dd !important; /* Verde claro */
-    color: #0f5132 !important; /* Texto escuro */
-    border: 1px solid #c3e6cb !important;
-    padding: 0.5mm 1.5mm !important;
-    border-radius: 0.25rem !important;
-    font-size: 0.8em !important;
-    display: inline-block !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    background-color: #d1e7dd !important; /* Example: Light Green */
+    color: #0f5132 !important; /* Example: Dark Green text */
+    border: 1px solid #a3cfbb !important;
+    padding: 1px 3px;
+    font-size: 7pt;
+    border-radius: 3px;
   }
 
-
-  /* === Estilos para impressão do Histórico de Cautelas do Policial === */
-  body:not(.print-officer-details-active) #officer-details-dialog-content {
-     /* Garante que o diálogo não seja impresso acidentalmente com outros relatórios */
-    display: none !important; 
+  /* Officer Details Print Styles */
+  body.print-officer-details-active > :not([data-radix-portal]) { /* Hide direct body children except portals */
+    display: none !important;
   }
-
-  /* Oculta tudo EXCETO o portal do diálogo quando estiver imprimindo detalhes do policial */
-  body.print-officer-details-active > *:not(div[data-radix-portal][role="dialog"]) {
+  body.print-officer-details-active [data-radix-portal]:not(:has(#officer-details-dialog-content)) { /* Hide other portals */
+      display: none !important;
+  }
+  body.print-officer-details-active [data-radix-popper-content-wrapper] { /* Hide tooltips */
+      display: none !important;
+  }
+  body.print-officer-details-active .ToastViewport { /* Hide toaster */
     display: none !important;
   }
 
-  /* Oculta o overlay do diálogo */
-  body.print-officer-details-active div[data-radix-portal][role="dialog"] > div[data-radix-overlay] {
-    display: none !important;
-  }
-
-  /* Ajusta o DialogContent para impressão */
-  body.print-officer-details-active #officer-details-dialog-content {
-    position: static !important; /* Remove posicionamento fixo */
-    display: block !important;
+  .print-officer-details-active #officer-details-dialog-content {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
-    transform: none !important; /* Remove translate */
-    padding: 0 !important; /* Remove padding do diálogo, margens serão da @page */
-    border: none !important;
-    box-shadow: none !important;
-    background-color: white !important;
     overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
   }
 
-  /* Oculta o botão de fechar (X) do diálogo */
-  body.print-officer-details-active #officer-details-dialog-content > button[aria-label="Close"] {
+  .print-officer-details-active #officer-details-dialog-content .dialog-header-non-print,
+  .print-officer-details-active #officer-details-dialog-content .officer-personal-info-non-print,
+  .print-officer-details-active #officer-details-dialog-content button[aria-label="Close"], /* Shadcn close button */
+  .print-officer-details-active #officer-details-dialog-content .dialog-footer-non-print {
     display: none !important;
   }
 
-  /* Oculta seções não desejadas DENTRO do DialogContent */
-  body.print-officer-details-active .dialog-header-non-print,
-  body.print-officer-details-active .officer-personal-info-non-print,
-  body.print-officer-details-active .dialog-footer-non-print {
-    display: none !important;
-  }
-
-  /* Exibe o título específico para impressão e a seção de histórico */
-  body.print-officer-details-active .print-only-officer-title {
+  .print-officer-details-active .print-only-officer-title {
     display: block !important;
     text-align: center;
-    font-size: 14pt;
-    font-weight: bold;
-    margin-bottom: 8mm;
+    font-size: 1.5rem; 
+    margin-bottom: 1rem; 
+    font-family: var(--font-headline), sans-serif;
   }
   
-  body.print-officer-details-active .officer-loan-history-section-print {
+  .print-officer-details-active .officer-loan-history-section-print {
     display: block !important;
+    padding-top: 0 !important;
   }
-  body.print-officer-details-active .officer-loan-history-section-print .scroll-area-component {
-      overflow: visible !important;
-      height: auto !important;
-      max-height: none !important;
+  .print-officer-details-active .officer-loan-history-section-print h3 {
+    text-align: center;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
   }
-
-
-  /* Estilos para a tabela de histórico do policial */
-  body.print-officer-details-active .officer-loan-history-section-print table {
+  .print-officer-details-active .officer-loan-history-section-print table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 5mm;
+    font-size: 10pt;
   }
-  body.print-officer-details-active .officer-loan-history-section-print th,
-  body.print-officer-details-active .officer-loan-history-section-print td {
-    border: 1px solid #999;
-    padding: 2mm;
+  .print-officer-details-active .officer-loan-history-section-print th,
+  .print-officer-details-active .officer-loan-history-section-print td {
+    border: 1px solid #ccc;
+    padding: 4px;
     text-align: left;
-    font-size: 9pt;
   }
-  body.print-officer-details-active .officer-loan-history-section-print th {
-    background-color: #eee !important;
-    font-weight: bold;
-    -webkit-print-color-adjust: exact; 
-    print-color-adjust: exact;
+  .print-officer-details-active .officer-loan-history-section-print th {
+    background-color: #f0f0f0;
   }
-  body.print-officer-details-active .officer-loan-history-section-print .print-badge-entregue {
-    background-color: #fff3cd !important;
+
+  /* Equipment Details Print Styles */
+  body.print-equipment-details-active > :not([data-radix-portal]) {
+    display: none !important;
+  }
+  body.print-equipment-details-active [data-radix-portal]:not(:has(#equipment-details-dialog-content)) {
+      display: none !important;
+  }
+  body.print-equipment-details-active [data-radix-popper-content-wrapper] {
+      display: none !important;
+  }
+  body.print-equipment-details-active .ToastViewport {
+    display: none !important;
+  }
+
+  .print-equipment-details-active #equipment-details-dialog-content {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+
+  .print-equipment-details-active #equipment-details-dialog-content .dialog-header-non-print,
+  .print-equipment-details-active #equipment-details-dialog-content .equipment-general-info-non-print,
+  .print-equipment-details-active #equipment-details-dialog-content button[aria-label="Close"],
+  .print-equipment-details-active #equipment-details-dialog-content .dialog-footer-non-print {
+    display: none !important;
+  }
+
+  .print-equipment-details-active .print-only-equipment-title {
+    display: block !important;
+    text-align: center;
+    font-size: 1.5rem; 
+    margin-bottom: 1rem; 
+    font-family: var(--font-headline), sans-serif;
+  }
+  
+  .print-equipment-details-active .equipment-loan-history-section-print {
+    display: block !important;
+    padding-top: 0 !important;
+  }
+  .print-equipment-details-active .equipment-loan-history-section-print h3 {
+    text-align: center;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+  }
+  .print-equipment-details-active .equipment-loan-history-section-print table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+  }
+  .print-equipment-details-active .equipment-loan-history-section-print th,
+  .print-equipment-details-active .equipment-loan-history-section-print td {
+    border: 1px solid #ccc;
+    padding: 4px;
+    text-align: left;
+  }
+  .print-equipment-details-active .equipment-loan-history-section-print th {
+    background-color: #f0f0f0;
+  }
+  .print-equipment-details-active .equipment-loan-history-section-print .print-badge-entregue,
+  .print-equipment-details-active .equipment-loan-history-section-print .print-badge-devolvido,
+  .print-officer-details-active .officer-loan-history-section-print .print-badge-entregue,
+  .print-officer-details-active .officer-loan-history-section-print .print-badge-devolvido {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    border: 1px solid #aaa;
+    padding: 1px 3px;
+    font-size: 8pt;
+    border-radius: 3px;
+    display: inline-block; /* Ensures badge background color is printed */
+  }
+  .print-equipment-details-active .equipment-loan-history-section-print .print-badge-entregue,
+  .print-officer-details-active .officer-loan-history-section-print .print-badge-entregue {
+    background-color: #fff3cd !important; 
     color: #664d03 !important;
-    border: 1px solid #ffeeba !important;
-    padding: 0.5mm 1mm !important;
-    border-radius: 2px !important;
-    -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
-  body.print-officer-details-active .officer-loan-history-section-print .print-badge-devolvido {
+  .print-equipment-details-active .equipment-loan-history-section-print .print-badge-devolvido,
+  .print-officer-details-active .officer-loan-history-section-print .print-badge-devolvido {
     background-color: #d1e7dd !important;
     color: #0f5132 !important;
-    border: 1px solid #c3e6cb !important;
-    padding: 0.5mm 1mm !important;
-    border-radius: 2px !important;
-    -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
 }
-
-    

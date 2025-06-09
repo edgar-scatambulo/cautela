@@ -19,7 +19,7 @@ import {
 import { EquipmentForm } from './components/equipment-form';
 import { useStore } from '@/lib/store';
 import { Equipment, EquipmentType, Loan, PoliceOfficer, LoanStatus, UserRole } from '@/lib/types';
-import { Smartphone, Printer, Radio, PlusCircle, Edit3, Trash2, PackageSearch, Eye, User, CalendarDays, Clock, Info } from 'lucide-react';
+import { Smartphone, Printer as PrinterIconLucide, Radio, PlusCircle, Edit3, Trash2, PackageSearch, Eye, User, CalendarDays, Clock, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { EquipmentSchema } from '@/lib/schemas';
 import type { z } from 'zod';
@@ -35,7 +35,7 @@ const EquipmentIcon = ({ type }: { type: EquipmentType }) => {
     case EquipmentType.CELULAR:
       return <Smartphone className="h-6 w-6 text-primary" />;
     case EquipmentType.IMPRESSORA:
-      return <Printer className="h-6 w-6 text-primary" />;
+      return <PrinterIconLucide className="h-6 w-6 text-primary" />;
     case EquipmentType.RADIO:
       return <Radio className="h-6 w-6 text-primary" />;
     default:
@@ -61,6 +61,7 @@ export default function EquipamentosPage() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false);
   const [selectedEquipmentForDetails, setSelectedEquipmentForDetails] = React.useState<Equipment | null>(null);
   const [equipmentLoanHistory, setEquipmentLoanHistory] = React.useState<Loan[]>([]);
+  const [printEquipmentHistoryTitle, setPrintEquipmentHistoryTitle] = React.useState('');
 
 
   const handleFormSubmit = async (values: z.infer<typeof EquipmentSchema>) => {
@@ -123,6 +124,22 @@ export default function EquipamentosPage() {
                          .sort((a, b) => parseISO(b.loanDate).getTime() - parseISO(a.loanDate).getTime()); // Sort by most recent
     setEquipmentLoanHistory(history);
     setIsDetailsDialogOpen(true);
+  };
+  
+  const handlePrintEquipmentHistory = () => {
+    if (!selectedEquipmentForDetails) return;
+    
+    setPrintEquipmentHistoryTitle(`Histórico de Cautelas: ${selectedEquipmentForDetails.brand} (Patrimônio: ${selectedEquipmentForDetails.serialNumber})`);
+    
+    setTimeout(() => {
+      document.body.classList.add('print-equipment-details-active');
+      window.onafterprint = () => {
+        document.body.classList.remove('print-equipment-details-active');
+        setPrintEquipmentHistoryTitle(''); 
+        window.onafterprint = null; 
+      };
+      window.print();
+    }, 100); 
   };
 
   const canManageEquipments = currentUser?.role === UserRole.ADMIN;
@@ -258,8 +275,8 @@ export default function EquipamentosPage() {
 
       {/* Equipment Details Dialog */}
       <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
-        <DialogContent className="sm:max-w-3xl">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-3xl" id="equipment-details-dialog-content">
+          <DialogHeader className="dialog-header-non-print">
             <DialogTitle className="flex items-center">
               <PackageSearch className="h-6 w-6 mr-2 text-primary" />
               Detalhes do Equipamento
@@ -270,9 +287,12 @@ export default function EquipamentosPage() {
                 </ShadDialogDescription>
             )}
           </DialogHeader>
+
+          <h1 className="hidden print:block print-only-equipment-title">{printEquipmentHistoryTitle}</h1>
+          
           {selectedEquipmentForDetails && (
-            <ScrollArea className="max-h-[70vh] pr-4">
-              <div className="space-y-6 py-4">
+            <>
+              <div className="equipment-general-info-non-print space-y-6 py-4">
                 <div>
                   <h3 className="text-lg font-semibold mb-2 font-headline">Informações Gerais</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -292,51 +312,58 @@ export default function EquipamentosPage() {
                     <div className="text-xs text-muted-foreground md:col-span-2">Cadastrado em: {format(parseISO(selectedEquipmentForDetails.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</div>
                   </div>
                 </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold mb-2 font-headline">Histórico de Cautelas</h3>
-                  {equipmentLoanHistory.length > 0 ? (
-                    <Table>
-                       <TableCaption>Histórico de todas as cautelas envolvendo este equipamento.</TableCaption>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Policial</TableHead>
-                          <TableHead>Data Cautela</TableHead>
-                          <TableHead>Data Devolução</TableHead>
-                          <TableHead>Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {equipmentLoanHistory.map(loan => (
-                          <TableRow key={loan.id}>
-                            <TableCell className="font-medium">{getOfficerNameLocal(loan.officerId, officers)}</TableCell>
-                            <TableCell>{format(parseISO(loan.loanDate), "dd/MM/yy", { locale: ptBR })}</TableCell>
-                            <TableCell>
-                              {loan.actualReturnDate 
-                                ? format(parseISO(loan.actualReturnDate), "dd/MM/yy", { locale: ptBR })
-                                : 'N/A'}
-                            </TableCell>
-                            <TableCell>
-                                <Badge className={`${
-                                  loan.status === LoanStatus.ENTREGUE ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100' :
-                                  'bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100'
-                                }`}>{loan.status}</Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-center py-8 border-2 border-dashed border-border rounded-lg">
-                        <Info className="h-10 w-10 text-muted-foreground mb-3" />
-                        <p className="text-muted-foreground">Nenhum histórico de cautela para este equipamento.</p>
-                    </div>
-                  )}
-                </div>
               </div>
-            </ScrollArea>
+              
+              <div className="equipment-loan-history-section-print space-y-6 py-4 print:py-0">
+                <ScrollArea className="max-h-[calc(70vh-220px)] print:max-h-none print:h-auto print:overflow-visible pr-4">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2 font-headline print:text-center print:mb-4">Histórico de Cautelas</h3>
+                    {equipmentLoanHistory.length > 0 ? (
+                      <Table>
+                        <TableCaption className="print:hidden">Histórico de todas as cautelas envolvendo este equipamento.</TableCaption>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Policial</TableHead>
+                            <TableHead>Data Cautela</TableHead>
+                            <TableHead>Data Devolução</TableHead>
+                            <TableHead>Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {equipmentLoanHistory.map(loan => (
+                            <TableRow key={loan.id}>
+                              <TableCell className="font-medium">{getOfficerNameLocal(loan.officerId, officers)}</TableCell>
+                              <TableCell>{format(parseISO(loan.loanDate), "dd/MM/yy", { locale: ptBR })}</TableCell>
+                              <TableCell>
+                                {loan.actualReturnDate 
+                                  ? format(parseISO(loan.actualReturnDate), "dd/MM/yy", { locale: ptBR })
+                                  : 'N/A'}
+                              </TableCell>
+                              <TableCell>
+                                  <Badge className={`print:border print:border-gray-400 ${
+                                    loan.status === LoanStatus.ENTREGUE ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100 print-badge-entregue' :
+                                    'bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100 print-badge-devolvido'
+                                  }`}>{loan.status}</Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-center py-8 border-2 border-dashed border-border rounded-lg print:hidden">
+                          <Info className="h-10 w-10 text-muted-foreground mb-3" />
+                          <p className="text-muted-foreground">Nenhum histórico de cautela para este equipamento.</p>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+            </>
           )}
-           <DialogFooter className="pt-4">
+           <DialogFooter className="pt-4 dialog-footer-non-print">
+                <Button onClick={handlePrintEquipmentHistory} variant="outline">
+                  <PrinterIconLucide className="mr-2 h-4 w-4" /> Imprimir Histórico
+                </Button>
                 <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>Fechar</Button>
             </DialogFooter>
         </DialogContent>
@@ -349,3 +376,4 @@ export default function EquipamentosPage() {
     
 
     
+
