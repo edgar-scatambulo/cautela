@@ -20,7 +20,7 @@ import { PoliceOfficerForm } from './components/police-officer-form';
 import { useStore } from '@/lib/store';
 import type { PoliceOfficer, Loan } from '@/lib/types';
 import { LoanStatus, UserRole } from '@/lib/types';
-import { Shield, UserPlus, Edit3, Award, Trash2, Eye, Info, UserCircle, Mail, CalendarDays } from 'lucide-react';
+import { Shield, UserPlus, Edit3, Award, Trash2, Eye, Info, UserCircle, Mail, CalendarDays, Printer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PoliceOfficerSchema } from '@/lib/schemas';
 import type { z } from 'zod';
@@ -82,6 +82,7 @@ export default function PoliciaisPage() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false);
   const [selectedOfficerForDetails, setSelectedOfficerForDetails] = React.useState<PoliceOfficer | null>(null);
   const [officerLoanHistory, setOfficerLoanHistory] = React.useState<Loan[]>([]);
+  const [printOfficerHistoryTitle, setPrintOfficerHistoryTitle] = React.useState('');
 
 
   const handleFormSubmit = async (values: z.infer<typeof PoliceOfficerSchema>) => {
@@ -141,6 +142,23 @@ export default function PoliciaisPage() {
                          .sort((a, b) => parseISO(b.loanDate).getTime() - parseISO(a.loanDate).getTime());
     setOfficerLoanHistory(history);
     setIsDetailsDialogOpen(true);
+  };
+
+  const handlePrintOfficerHistory = () => {
+    if (!selectedOfficerForDetails) return;
+    
+    setPrintOfficerHistoryTitle(`Histórico de Cautelas: ${selectedOfficerForDetails.name} - ${selectedOfficerForDetails.rank}`);
+    
+    // Timeout to allow state to update and title to render for print
+    setTimeout(() => {
+      document.body.classList.add('print-officer-details-active');
+      window.onafterprint = () => {
+        document.body.classList.remove('print-officer-details-active');
+        setPrintOfficerHistoryTitle(''); // Clear title
+        window.onafterprint = null; 
+      };
+      window.print();
+    }, 100); // Small delay
   };
 
   const canManageOfficers = currentUser?.role === UserRole.ADMIN;
@@ -278,8 +296,8 @@ export default function PoliciaisPage() {
       </AlertDialog>
 
       <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
-        <DialogContent className="sm:max-w-3xl">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-3xl" id="officer-details-dialog-content">
+          <DialogHeader className="dialog-header-non-print">
             <DialogTitle className="flex items-center">
               <UserCircle className="h-6 w-6 mr-2 text-primary" /> 
               Detalhes do Policial
@@ -290,9 +308,13 @@ export default function PoliciaisPage() {
                 </ShadDialogDescription>
             )}
           </DialogHeader>
+
+          {/* Título para impressão */}
+          <h1 className="hidden print:block print-only-officer-title">{printOfficerHistoryTitle}</h1>
+
           {selectedOfficerForDetails && (
-            <ScrollArea className="max-h-[70vh] pr-4">
-              <div className="space-y-6 py-4">
+            <>
+              <div className="officer-personal-info-non-print space-y-6 py-4">
                 <div>
                   <h3 className="text-lg font-semibold mb-2 font-headline">Informações Pessoais</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -304,57 +326,64 @@ export default function PoliciaisPage() {
                      <p className="text-xs text-muted-foreground md:col-span-2">Cadastrado em: {format(parseISO(selectedOfficerForDetails.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
                   </div>
                 </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold mb-2 font-headline">Histórico de Cautelas</h3>
-                  {officerLoanHistory.length > 0 ? (
-                    <Table>
-                       <TableCaption>Histórico de todas as cautelas realizadas por este policial.</TableCaption>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Equipamentos</TableHead>
-                          <TableHead>Data Cautela</TableHead>
-                          <TableHead>Data Devolução</TableHead>
-                          <TableHead>Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {officerLoanHistory.map(loan => (
-                          <TableRow key={loan.id}>
-                            <TableCell>
-                                <ul className="list-disc list-inside text-xs">
-                                  {loan.equipment.map(eq => (
-                                    <li key={eq.id}>{eq.brand} ({eq.serialNumber})</li>
-                                  ))}
-                                </ul>
-                            </TableCell>
-                            <TableCell>{format(parseISO(loan.loanDate), "dd/MM/yy", { locale: ptBR })}</TableCell>
-                            <TableCell>
-                              {loan.actualReturnDate 
-                                ? format(parseISO(loan.actualReturnDate), "dd/MM/yy", { locale: ptBR })
-                                : (loan.expectedReturnDate ? `Prev: ${format(parseISO(loan.expectedReturnDate), "dd/MM/yy", { locale: ptBR })}` : 'N/A')}
-                            </TableCell>
-                            <TableCell>
-                                <Badge className={`${
-                                  loan.status === LoanStatus.ENTREGUE ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100' :
-                                  'bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100'
-                                }`}>{loan.status}</Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-center py-8 border-2 border-dashed border-border rounded-lg">
-                        <Info className="h-10 w-10 text-muted-foreground mb-3" />
-                        <p className="text-muted-foreground">Nenhum histórico de cautela para este policial.</p>
-                    </div>
-                  )}
-                </div>
               </div>
-            </ScrollArea>
+              
+              <div className="officer-loan-history-section-print space-y-6 py-4 print:py-0">
+                <ScrollArea className="max-h-[calc(70vh-150px)] print:max-h-none print:h-auto print:overflow-visible pr-4">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2 font-headline print:text-center print:mb-4">Histórico de Cautelas</h3>
+                    {officerLoanHistory.length > 0 ? (
+                      <Table>
+                        <TableCaption className="print:hidden">Histórico de todas as cautelas realizadas por este policial.</TableCaption>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Equipamentos</TableHead>
+                            <TableHead>Data Cautela</TableHead>
+                            <TableHead>Data Devolução</TableHead>
+                            <TableHead>Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {officerLoanHistory.map(loan => (
+                            <TableRow key={loan.id}>
+                              <TableCell>
+                                  <ul className="list-disc list-inside text-xs">
+                                    {loan.equipment.map(eq => (
+                                      <li key={eq.id}>{eq.brand} ({eq.serialNumber})</li>
+                                    ))}
+                                  </ul>
+                              </TableCell>
+                              <TableCell>{format(parseISO(loan.loanDate), "dd/MM/yy", { locale: ptBR })}</TableCell>
+                              <TableCell>
+                                {loan.actualReturnDate 
+                                  ? format(parseISO(loan.actualReturnDate), "dd/MM/yy", { locale: ptBR })
+                                  : (loan.expectedReturnDate ? `Prev: ${format(parseISO(loan.expectedReturnDate), "dd/MM/yy", { locale: ptBR })}` : 'N/A')}
+                              </TableCell>
+                              <TableCell>
+                                  <Badge className={`print:border print:border-gray-400 ${
+                                    loan.status === LoanStatus.ENTREGUE ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100 print-badge-entregue' :
+                                    'bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100 print-badge-devolvido'
+                                  }`}>{loan.status}</Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-center py-8 border-2 border-dashed border-border rounded-lg print:hidden">
+                          <Info className="h-10 w-10 text-muted-foreground mb-3" />
+                          <p className="text-muted-foreground">Nenhum histórico de cautela para este policial.</p>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+            </>
           )}
-           <DialogFooter className="pt-4">
+           <DialogFooter className="pt-4 dialog-footer-non-print">
+                <Button onClick={handlePrintOfficerHistory} variant="outline">
+                  <Printer className="mr-2 h-4 w-4" /> Imprimir Histórico
+                </Button>
                 <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>Fechar</Button>
             </DialogFooter>
         </DialogContent>
@@ -362,6 +391,4 @@ export default function PoliciaisPage() {
     </TooltipProvider>
   );
 }
-
-
     

@@ -1,99 +1,175 @@
 
 @media print {
+  @page {
+    size: A4;
+    margin: 15mm; /* Reduzido para dar mais espaço ao conteúdo */
+  }
+
   body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 10pt; /* Base font size for print */
-    line-height: 1.3;
-    margin: 0.5in !important; 
-    background-color: #ffffff !important; 
-    color: #000000 !important; 
-  }
-
-  .page-header-print-title {
-    font-size: 16pt;
-    font-weight: bold;
-    margin-bottom: 0.4in; /* Space below title */
-    text-align: center;
-  }
-
-  /* Utility to avoid page breaks inside elements */
-  .page-break-inside-avoid {
-    page-break-inside: avoid;
-  }
-
-  /* Ensure badge background colors print if they were used */
-  /* (Currently the new print format uses plain text for status) */
-  .print-badge-entregue {
-    background-color: #fef9c3 !important; /* yellow-100 */
-    color: #854d0e !important; /* yellow-700 */
-    border: 1px solid #fde68a; 
-    padding: 1px 3px;
-    font-size: 8pt;
-    border-radius: 4px;
     -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background-color: white !important; /* Garante fundo branco para economizar tinta */
+    color: black !important; /* Garante texto preto */
+    font-size: 10pt; /* Tamanho de fonte base para impressão */
+  }
+
+  /* Esconde elementos gerais não desejados na impressão do relatório de cautelas */
+  .page-header:not(.page-header-print-title),
+  .print\:hidden { /* Mantém a utilidade do Tailwind */
+    display: none !important;
+  }
+  
+  .page-header-print-title { /* Título específico para o relatório geral */
+    display: block !important;
+    text-align: center;
+    font-size: 18pt; /* Ajustado para 18pt */
+    font-weight: bold;
+    margin-bottom: 10mm; /* Ajustado para 10mm */
+  }
+
+  .card-print, .print-report-item { /* Para os itens do relatório de cautelas geral */
+    page-break-inside: avoid;
+    border: 1px solid #ccc !important; /* Borda mais sutil para impressão */
+    padding: 3mm !important; /* Espaçamento interno */
+    margin-bottom: 5mm !important; /* Espaço entre itens */
+    background-color: white !important; /* Garante fundo branco para o card */
+  }
+  
+  .print-report-item p, .print-report-item ul, .print-report-item h4 {
+    font-size: 10pt !important; /* Ajusta o tamanho da fonte para consistência */
+    margin-bottom: 1mm !important; /* Espaçamento sutil entre parágrafos */
+  }
+  
+  .print-report-item h4 {
+      margin-top: 2mm !important;
+  }
+
+  .print-report-item ul {
+    padding-left: 5mm !important; /* Recuo para listas */
+  }
+
+  .print-badge-entregue {
+    background-color: #fff3cd !important; /* Amarelo claro */
+    color: #664d03 !important; /* Texto escuro */
+    border: 1px solid #ffeeba !important;
+    padding: 0.5mm 1.5mm !important;
+    border-radius: 0.25rem !important;
+    font-size: 0.8em !important;
+    display: inline-block !important;
+    -webkit-print-color-adjust: exact; 
     print-color-adjust: exact;
   }
 
   .print-badge-devolvido {
-    background-color: #dcfce7 !important; /* green-100 */
-    color: #166534 !important; /* green-700 */
-    border: 1px solid #bbf7d0; 
-    padding: 1px 3px;
-    font-size: 8pt;
-    border-radius: 4px;
+    background-color: #d1e7dd !important; /* Verde claro */
+    color: #0f5132 !important; /* Texto escuro */
+    border: 1px solid #c3e6cb !important;
+    padding: 0.5mm 1.5mm !important;
+    border-radius: 0.25rem !important;
+    font-size: 0.8em !important;
+    display: inline-block !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  /* Hide elements not meant for printing */
-  .print\:hidden {
+
+  /* === Estilos para impressão do Histórico de Cautelas do Policial === */
+  body:not(.print-officer-details-active) #officer-details-dialog-content {
+     /* Garante que o diálogo não seja impresso acidentalmente com outros relatórios */
+    display: none !important; 
+  }
+
+  /* Oculta tudo EXCETO o portal do diálogo quando estiver imprimindo detalhes do policial */
+  body.print-officer-details-active > *:not(div[data-radix-portal][role="dialog"]) {
     display: none !important;
   }
 
-  /* Tailwind print classes are preferred, but this can be a fallback or for global adjustments */
-  ul.print\:list-disc {
-    list-style-type: disc !important;
+  /* Oculta o overlay do diálogo */
+  body.print-officer-details-active div[data-radix-portal][role="dialog"] > div[data-radix-overlay] {
+    display: none !important;
   }
-  ul.print\:list-inside {
-    list-style-position: inside !important;
+
+  /* Ajusta o DialogContent para impressão */
+  body.print-officer-details-active #officer-details-dialog-content {
+    position: static !important; /* Remove posicionamento fixo */
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    transform: none !important; /* Remove translate */
+    padding: 0 !important; /* Remove padding do diálogo, margens serão da @page */
+    border: none !important;
+    box-shadow: none !important;
+    background-color: white !important;
+    overflow: visible !important;
   }
-  .print\:pl-4 {
-    padding-left: 1rem !important; /* Corresponds to pl-4 */
+
+  /* Oculta o botão de fechar (X) do diálogo */
+  body.print-officer-details-active #officer-details-dialog-content > button[aria-label="Close"] {
+    display: none !important;
   }
-  .print\:text-base {
-    font-size: 1rem !important; /* Corresponds to text-base, or adjust as needed for 10pt/11pt documents */
+
+  /* Oculta seções não desejadas DENTRO do DialogContent */
+  body.print-officer-details-active .dialog-header-non-print,
+  body.print-officer-details-active .officer-personal-info-non-print,
+  body.print-officer-details-active .dialog-footer-non-print {
+    display: none !important;
   }
-   .print\:text-sm {
-    font-size: 0.875rem !important; /* Corresponds to text-sm */
+
+  /* Exibe o título específico para impressão e a seção de histórico */
+  body.print-officer-details-active .print-only-officer-title {
+    display: block !important;
+    text-align: center;
+    font-size: 14pt;
+    font-weight: bold;
+    margin-bottom: 8mm;
   }
-  .print\:font-bold {
-    font-weight: bold !important;
+  
+  body.print-officer-details-active .officer-loan-history-section-print {
+    display: block !important;
   }
-  .print\:font-normal {
-    font-weight: normal !important;
+  body.print-officer-details-active .officer-loan-history-section-print .scroll-area-component {
+      overflow: visible !important;
+      height: auto !important;
+      max-height: none !important;
   }
-  .print\:mt-2 {
-    margin-top: 0.5rem !important;
+
+
+  /* Estilos para a tabela de histórico do policial */
+  body.print-officer-details-active .officer-loan-history-section-print table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 5mm;
   }
-  .print\:mb-0\.5 {
-    margin-bottom: 0.125rem !important;
+  body.print-officer-details-active .officer-loan-history-section-print th,
+  body.print-officer-details-active .officer-loan-history-section-print td {
+    border: 1px solid #999;
+    padding: 2mm;
+    text-align: left;
+    font-size: 9pt;
   }
-  .print\:mt-1\.5 {
-    margin-top: 0.375rem !important;
+  body.print-officer-details-active .officer-loan-history-section-print th {
+    background-color: #eee !important;
+    font-weight: bold;
+    -webkit-print-color-adjust: exact; 
+    print-color-adjust: exact;
   }
-   .print\:mb-px {
-    margin-bottom: 1px !important;
+  body.print-officer-details-active .officer-loan-history-section-print .print-badge-entregue {
+    background-color: #fff3cd !important;
+    color: #664d03 !important;
+    border: 1px solid #ffeeba !important;
+    padding: 0.5mm 1mm !important;
+    border-radius: 2px !important;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
-  hr.print\:my-3 {
-    margin-top: 0.75rem !important;
-    margin-bottom: 0.75rem !important;
-  }
-  hr.print\:border-gray-400 {
-    border-color: #9ca3af !important;
-    border-top-width: 1px;
-  }
-  .print\:pt-3 {
-    padding-top: 0.75rem !important;
+  body.print-officer-details-active .officer-loan-history-section-print .print-badge-devolvido {
+    background-color: #d1e7dd !important;
+    color: #0f5132 !important;
+    border: 1px solid #c3e6cb !important;
+    padding: 0.5mm 1mm !important;
+    border-radius: 2px !important;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
 }
 
+    
