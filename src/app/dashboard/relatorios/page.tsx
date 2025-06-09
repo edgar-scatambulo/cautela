@@ -6,8 +6,8 @@ import { PageHeader } from '@/components/page-header';
 import { useStore } from '@/lib/store';
 import { Loan, PoliceOfficer, LoanStatus } from '@/lib/types';
 import { ReportFilters } from './components/report-filters';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, User, CalendarDays, PackageSearch, Info, Printer } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'; // CardTitle removido pois não é mais usado diretamente aqui
+import { FileText, User, CalendarDays, Info, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format, parseISO, isWithinInterval, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -95,59 +95,94 @@ export default function RelatoriosPage() {
             <p className="text-muted-foreground">Não há cautelas que correspondam aos filtros aplicados ou nenhuma cautela foi registrada ainda.</p>
         </div>
       ) : (
-        <div className="space-y-6 print:space-y-3">
-          {filteredLoans.map((loan) => (
-            <Card key={loan.id} className="card-print print:p-2 print:mb-2.5">
-              <CardHeader className="print:p-1 print:pb-0">
-                 <div className="flex items-start justify-between mb-1 print:mb-0.5">
-                   <div className="flex-grow"> {/* Container for officer and dates */}
-                      <CardDescription className="flex items-center text-sm font-semibold text-foreground print:text-xs print:font-normal print:text-black">
-                        <User className="h-4 w-4 mr-2 text-muted-foreground print:w-3 print:h-3 print:mr-1" /> {getOfficerName(loan.officerId, officers)}
-                      </CardDescription>
-                      <CardDescription className="flex items-center text-sm mt-0.5 print:text-xs print:font-normal print:text-black print:mt-px">
-                        <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground print:w-3 print:h-3 print:mr-1" /> 
-                        Cautela: {format(parseISO(loan.loanDate), "dd/MM/yy", { locale: ptBR })} às {loan.loanTime}
-                      </CardDescription>
-                      {loan.status === LoanStatus.DEVOLVIDO && loan.actualReturnDate && loan.actualReturnTime && (
-                          <CardDescription className="flex items-center text-sm mt-0.5 print:text-xs print:font-normal print:text-black print:mt-px">
-                            <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground print:w-3 print:h-3 print:mr-1" /> 
-                            Devolução: {format(parseISO(loan.actualReturnDate), "dd/MM/yy", { locale: ptBR })} às {loan.actualReturnTime}
-                          </CardDescription>
-                        )}
-                   </div>
-                   <span className={`px-2 py-0.5 text-xs rounded-full print:text-[8pt] print:px-1 print:py-0 ${
-                    loan.status === LoanStatus.ENTREGUE ? 
-                      'bg-yellow-100 text-yellow-700 print:bg-yellow-100 print:text-yellow-700 print-badge-entregue' :
-                      'bg-green-100 text-green-700 print:bg-green-100 print:text-green-700 print-badge-devolvido'
-                  }`}>
-                    {loan.status}
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent className="print:p-1 print:pt-0.5">
-                <h4 className="font-medium text-sm text-foreground mb-1 print:text-xs print:font-semibold print:mb-0.5">Equipamentos:</h4>
-                <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 print:text-xs print:list-none print:pl-0 print:space-y-0">
+        <div className="space-y-6 print:space-y-0">
+          {filteredLoans.map((loan, index) => (
+            <React.Fragment key={loan.id}>
+              {/* Screen rendering */}
+              <Card className="print:hidden">
+                <CardHeader className="print:p-1 print:pb-0">
+                  <div className="flex items-start justify-between mb-1 print:mb-0.5">
+                    <div className="flex-grow">
+                        <CardDescription className="flex items-center text-sm font-semibold text-foreground print:text-xs print:font-normal print:text-black">
+                          <User className="h-4 w-4 mr-2 text-muted-foreground print:w-3 print:h-3 print:mr-1" /> {getOfficerName(loan.officerId, officers)}
+                        </CardDescription>
+                        <CardDescription className="flex items-center text-sm mt-0.5 print:text-xs print:font-normal print:text-black print:mt-px">
+                          <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground print:w-3 print:h-3 print:mr-1" /> 
+                          Cautela: {format(parseISO(loan.loanDate), "dd/MM/yy 'às' HH:mm", { locale: ptBR })}
+                        </CardDescription>
+                        {loan.status === LoanStatus.DEVOLVIDO && loan.actualReturnDate && loan.actualReturnTime && (
+                            <CardDescription className="flex items-center text-sm mt-0.5 print:text-xs print:font-normal print:text-black print:mt-px">
+                              <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground print:w-3 print:h-3 print:mr-1" /> 
+                              Devolução: {format(parseISO(loan.actualReturnDate), "dd/MM/yy 'às' HH:mm", { locale: ptBR })}
+                            </CardDescription>
+                          )}
+                    </div>
+                    <span className={`px-2 py-0.5 text-xs rounded-full print:text-[8pt] print:px-1 print:py-0 ${
+                      loan.status === LoanStatus.ENTREGUE ? 
+                        'bg-yellow-100 text-yellow-700 print:bg-yellow-100 print:text-yellow-700 print-badge-entregue' :
+                        'bg-green-100 text-green-700 print:bg-green-100 print:text-green-700 print-badge-devolvido'
+                    }`}>
+                      {loan.status}
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent className="print:p-1 print:pt-0.5">
+                  <h4 className="font-medium text-sm text-foreground mb-1 print:text-xs print:font-semibold print:mb-0.5">Equipamentos:</h4>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 print:text-xs print:list-none print:pl-0 print:space-y-0">
+                    {loan.equipment.map(eq => (
+                      <li key={eq.id} className="print:mb-px">{eq.brand} ({eq.serialNumber})</li>
+                    ))}
+                  </ul>
+                  {loan.loanObservation && (
+                    <div className="mt-2 print:mt-1">
+                      <h4 className="font-medium text-sm text-foreground print:text-xs print:font-semibold">Obs. (Cautela):</h4>
+                      <p className="text-sm text-muted-foreground print:text-xs print:font-normal">{loan.loanObservation}</p>
+                    </div>
+                  )}
+                  {loan.returnObservation && (
+                    <div className="mt-2 print:mt-1">
+                      <h4 className="font-medium text-sm text-foreground print:text-xs print:font-semibold">Obs. (Devolução):</h4>
+                      <p className="text-sm text-muted-foreground print:text-xs print:font-normal">{loan.returnObservation}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Print rendering */}
+              <div className="hidden print:block print:pt-3 page-break-inside-avoid">
+                <p className="print:text-base print:font-bold">Policial Responsável: <span className="print:font-normal">{getOfficerName(loan.officerId, officers)}</span></p>
+                <p className="print:text-sm">Data da Cautela: <span className="print:font-normal">{format(parseISO(loan.loanDate), "dd/MM/yy 'às' HH:mm", { locale: ptBR })}</span></p>
+                {loan.status === LoanStatus.DEVOLVIDO && loan.actualReturnDate && loan.actualReturnTime && (
+                  <p className="print:text-sm">Data da Devolução: <span className="print:font-normal">{format(parseISO(loan.actualReturnDate), "dd/MM/yy 'às' HH:mm", { locale: ptBR })}</span></p>
+                )}
+                <p className="print:text-sm">Status da Cautela: <span className="print:font-normal">{loan.status}</span></p>
+              
+                <h4 className="print:text-sm print:font-bold print:mt-2 print:mb-0.5">Equipamentos Cautelados:</h4>
+                <ul className="print:list-disc print:list-inside print:pl-4 print:text-sm">
                   {loan.equipment.map(eq => (
-                    <li key={eq.id} className="print:mb-px">{eq.brand} ({eq.serialNumber})</li>
+                    <li key={eq.id} className="print:font-normal print:mb-px">{eq.brand} ({eq.serialNumber})</li>
                   ))}
                 </ul>
+              
                 {loan.loanObservation && (
-                  <div className="mt-2 print:mt-1">
-                    <h4 className="font-medium text-sm text-foreground print:text-xs print:font-semibold">Obs. (Cautela):</h4>
-                    <p className="text-sm text-muted-foreground print:text-xs print:font-normal">{loan.loanObservation}</p>
+                  <div className="print:mt-1.5">
+                    <p className="print:text-sm"><span className="print:font-bold">Obs. (Cautela):</span> {loan.loanObservation}</p>
                   </div>
                 )}
-                 {loan.returnObservation && (
-                  <div className="mt-2 print:mt-1">
-                    <h4 className="font-medium text-sm text-foreground print:text-xs print:font-semibold">Obs. (Devolução):</h4>
-                    <p className="text-sm text-muted-foreground print:text-xs print:font-normal">{loan.returnObservation}</p>
+                {loan.returnObservation && (
+                  <div className="print:mt-1.5">
+                    <p className="print:text-sm"><span className="print:font-bold">Obs. (Devolução):</span> {loan.returnObservation}</p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+                {index < filteredLoans.length - 1 && (
+                  <hr className="print:block hidden print:my-3 print:border-gray-400" />
+                )}
+              </div>
+            </React.Fragment>
           ))}
         </div>
       )}
     </>
   );
 }
+
