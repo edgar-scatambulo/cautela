@@ -38,7 +38,7 @@ interface LoanFormProps {
   onSubmit: (values: z.infer<typeof LoanSchema>) => void;
   defaultValues?: Partial<z.infer<typeof LoanSchema>>;
   officers: PoliceOfficer[];
-  availableEquipments: Equipment[]; 
+  availableEquipments: Equipment[];
   isSubmitting?: boolean;
 }
 
@@ -53,6 +53,10 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
       loanObservation: defaultValues?.loanObservation || "",
     },
   });
+
+  const sortedOfficers = React.useMemo(() => {
+    return [...officers].sort((a, b) => a.name.localeCompare(b.name));
+  }, [officers]);
 
   return (
     <Form {...form}>
@@ -70,7 +74,7 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {officers.map((officer) => (
+                  {sortedOfficers.map((officer) => (
                     <SelectItem key={officer.id} value={officer.id}>
                       {officer.name} - {officer.rank}
                     </SelectItem>
@@ -155,7 +159,7 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
             </FormItem>
           )}
         />
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -174,7 +178,7 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
                         )}
                       >
                         {field.value ? (
-                          format(new Date(field.value), "PPP", { locale: ptBR })
+                          format(new Date(field.value + "T00:00:00"), "PPP", { locale: ptBR }) // Ensure parsing as local date
                         ) : (
                           <span>Escolha uma data</span>
                         )}
@@ -185,7 +189,7 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={field.value ? new Date(field.value) : undefined}
+                      selected={field.value ? new Date(field.value + "T00:00:00") : undefined} // Ensure parsing as local date
                       onSelect={(date) => field.onChange(date ? format(date, "yyyy-MM-dd") : "")}
                       initialFocus
                     />
