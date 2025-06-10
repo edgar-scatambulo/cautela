@@ -6,10 +6,10 @@ import { PageHeader } from '@/components/page-header';
 import { useStore } from '@/lib/store';
 import { Loan, PoliceOfficer, LoanStatus } from '@/lib/types';
 import { ReportFilters } from './components/report-filters';
-import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'; // CardTitle removido pois não é mais usado diretamente aqui
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { FileText, User, CalendarDays, Info, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { format, parseISO, isWithinInterval, isValid } from 'date-fns';
+import { format, parse, isValid, isWithinInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
 
@@ -31,14 +31,15 @@ export default function RelatoriosPage() {
 
     if (filters.dateRange?.from) {
       const fromDate = filters.dateRange.from;
-      const toDate = filters.dateRange.to || filters.dateRange.from;
+      const toDate = filters.dateRange.to || filters.dateRange.from; // Consider single day selection
 
       tempLoans = tempLoans.filter(loan => {
-        const loanDate = parseISO(loan.loanDate);
-        if (!isValid(loanDate)) return false;
+        const loanDateObj = parse(loan.loanDate, 'yyyy-MM-dd', new Date());
+        if (!isValid(loanDateObj)) return false;
+        // Adjust toDate to include the whole day
         const adjustedToDate = new Date(toDate);
         adjustedToDate.setHours(23, 59, 59, 999);
-        return isWithinInterval(loanDate, { start: fromDate, end: adjustedToDate });
+        return isWithinInterval(loanDateObj, { start: fromDate, end: adjustedToDate });
       });
     }
 
@@ -66,6 +67,12 @@ export default function RelatoriosPage() {
     window.print();
   };
 
+  const pageHeaderActions = (
+    <Button onClick={handlePrint} variant="outline" className="print:hidden">
+      <Printer className="mr-2 h-4 w-4" /> Imprimir Relatório
+    </Button>
+  );
+
   return (
     <>
       <h1 className="text-3xl font-bold text-center mb-6 hidden print:block page-header-print-title font-headline">
@@ -76,11 +83,7 @@ export default function RelatoriosPage() {
         title="Relatório de Cautelas"
         description="Visualize todas as cautelas efetuadas com filtros por data, policial, status da cautela e patrimônio do equipamento."
         icon={FileText}
-        actions={
-          <Button onClick={handlePrint} variant="outline" className="print:hidden">
-            <Printer className="mr-2 h-4 w-4" /> Imprimir Relatório
-          </Button>
-        }
+        actions={pageHeaderActions}
         className="print:hidden"
       />
 
@@ -95,9 +98,9 @@ export default function RelatoriosPage() {
             <p className="text-muted-foreground">Não há cautelas que correspondam aos filtros aplicados ou nenhuma cautela foi registrada ainda.</p>
         </div>
       ) : (
-        <div className="space-y-6 print:space-y-0">
-          {filteredLoans.map((loan, index) => (
-            <React.Fragment key={loan.id}>
+        <div className="space-y-6 print:space-y-0 print-columns-container">
+          {filteredLoans.map((loan) => (
+            <div key={loan.id} className="loan-print-item">
               {/* Screen rendering */}
               <Card className="print:hidden">
                 <CardHeader className="print:p-1 print:pb-0">
@@ -108,12 +111,12 @@ export default function RelatoriosPage() {
                         </CardDescription>
                         <CardDescription className="flex items-center text-sm mt-0.5 print:text-xs print:font-normal print:text-black print:mt-px">
                           <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground print:w-3 print:h-3 print:mr-1" /> 
-                          Cautela: {format(parseISO(loan.loanDate), "dd/MM/yy", { locale: ptBR })} às {loan.loanTime}
+                          Cautela: {format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })} às {loan.loanTime}
                         </CardDescription>
                         {loan.status === LoanStatus.DEVOLVIDO && loan.actualReturnDate && loan.actualReturnTime && (
                             <CardDescription className="flex items-center text-sm mt-0.5 print:text-xs print:font-normal print:text-black print:mt-px">
                               <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground print:w-3 print:h-3 print:mr-1" /> 
-                              Devolução: {format(parseISO(loan.actualReturnDate), "dd/MM/yy", { locale: ptBR })} às {loan.actualReturnTime}
+                              Devolução: {format(parse(loan.actualReturnDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })} às {loan.actualReturnTime}
                             </CardDescription>
                           )}
                     </div>
@@ -149,40 +152,42 @@ export default function RelatoriosPage() {
               </Card>
 
               {/* Print rendering */}
-              <div className="hidden print:block print:pt-3 page-break-inside-avoid">
-                <p className="print:text-base print:font-bold print:mb-1">Policial Responsável: <span className="print:font-normal">{getOfficerName(loan.officerId, officers)}</span></p>
-                <p className="print:text-sm">Data da Cautela: <span className="print:font-normal">{format(parseISO(loan.loanDate), "dd/MM/yy", { locale: ptBR })} às {loan.loanTime}</span></p>
+              <div className="hidden print:block">
+                <div className="print-status-line">
+                  <p><span className="print-label">Status:</span></p>
+                  <p><span className="print-value">{loan.status}</span></p>
+                </div>
+                <p><span className="print-label">Policial Responsável:</span></p>
+                <p className="print-officer-name print-value">{getOfficerName(loan.officerId, officers)}</p>
+                
+                <p><span className="print-label">Data da Cautela:</span> <span className="print-value">{format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })} às {loan.loanTime}</span></p>
+                
                 {loan.status === LoanStatus.DEVOLVIDO && loan.actualReturnDate && loan.actualReturnTime && (
-                  <p className="print:text-sm">Data da Devolução: <span className="print:font-normal">{format(parseISO(loan.actualReturnDate), "dd/MM/yy", { locale: ptBR })} às {loan.actualReturnTime}</span></p>
+                  <p><span className="print-label">Data de Devolução:</span> <span className="print-value">{format(parse(loan.actualReturnDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })} às {loan.actualReturnTime}</span></p>
                 )}
-                <p className="print:text-sm">Status da Cautela: <span className="print:font-normal">{loan.status}</span></p>
               
-                <h4 className="print:text-sm print:font-bold print:mt-2 print:mb-0.5">Equipamentos Cautelados:</h4>
-                <ul className="print:list-disc print:list-inside print:pl-4 print:text-sm">
+                <p className="print-label mt-1.5">Equipamentos:</p>
+                <ul className="print-equipment-list">
                   {loan.equipment.map(eq => (
-                    <li key={eq.id} className="print:font-normal print:mb-px">{eq.brand} ({eq.serialNumber})</li>
+                    <li key={eq.id} className="print-value">{eq.brand} ({eq.serialNumber})</li>
                   ))}
                 </ul>
               
                 {loan.loanObservation && (
-                  <div className="print:mt-1.5">
-                    <p className="print:text-sm"><span className="print:font-bold">Obs. (Cautela):</span> {loan.loanObservation}</p>
+                  <div className="mt-1.5">
+                    <p><span className="print-label">Obs. (Cautela):</span> <span className="print-value">{loan.loanObservation}</span></p>
                   </div>
                 )}
                 {loan.returnObservation && (
-                  <div className="print:mt-1.5">
-                    <p className="print:text-sm"><span className="print:font-bold">Obs. (Devolução):</span> {loan.returnObservation}</p>
+                  <div className="mt-1.5">
+                    <p><span className="print-label">Obs. (Devolução):</span> <span className="print-value">{loan.returnObservation}</span></p>
                   </div>
                 )}
-                {index < filteredLoans.length - 1 && (
-                  <hr className="print:block hidden print:my-3 print:border-gray-400" />
-                )}
               </div>
-            </React.Fragment>
+            </div>
           ))}
         </div>
       )}
     </>
   );
 }
-
