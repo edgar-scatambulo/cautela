@@ -57,7 +57,7 @@ export function PoliceOfficerForm({ onSubmit, defaultValues, isSubmitting }: Pol
           name="fullName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nome Completo (Opcional)</FormLabel>
+              <FormLabel>Nome Completo</FormLabel>
               <FormControl>
                 <Input placeholder="Ex: João da Silva Sauro" {...field} />
               </FormControl>
