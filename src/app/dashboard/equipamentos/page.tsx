@@ -129,16 +129,25 @@ export default function EquipamentosPage() {
   const handlePrintEquipmentHistory = () => {
     if (!selectedEquipmentForDetails) return;
     
-    setPrintEquipmentHistoryTitle(`Histórico de Cautelas: ${selectedEquipmentForDetails.brand} (Patrimônio: ${selectedEquipmentForDetails.serialNumber})`);
+    setPrintEquipmentHistoryTitle(`Detalhes do Equipamento: ${selectedEquipmentForDetails.brand} (Patrimônio: ${selectedEquipmentForDetails.serialNumber})`);
     
     setTimeout(() => {
-      document.body.classList.add('print-equipment-details-active');
-      window.onafterprint = () => {
-        document.body.classList.remove('print-equipment-details-active');
-        setPrintEquipmentHistoryTitle(''); 
-        window.onafterprint = null; 
-      };
+      document.body.classList.add('print-equipment-details-active'); // Used to scope print styles
       window.print();
+      // Clean up class after print dialog closes or print is done
+      // Using onafterprint if available, or a timeout as a fallback
+      if (typeof window.onafterprint === 'function') {
+        window.onafterprint = () => {
+          document.body.classList.remove('print-equipment-details-active');
+          setPrintEquipmentHistoryTitle(''); 
+          window.onafterprint = null; 
+        };
+      } else {
+        setTimeout(() => {
+          document.body.classList.remove('print-equipment-details-active');
+          setPrintEquipmentHistoryTitle('');
+        }, 1000); // Fallback timeout
+      }
     }, 100); 
   };
 
@@ -275,7 +284,7 @@ export default function EquipamentosPage() {
 
       {/* Equipment Details Dialog */}
       <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
-        <DialogContent className="sm:max-w-3xl" id="equipment-details-dialog-content">
+        <DialogContent className="sm:max-w-3xl print:max-w-none print:w-full print:h-auto print:overflow-visible" id="equipment-details-dialog-content">
           <DialogHeader className="dialog-header-non-print">
             <DialogTitle className="flex items-center">
               <PackageSearch className="h-6 w-6 mr-2 text-primary" />
@@ -292,14 +301,14 @@ export default function EquipamentosPage() {
           
           {selectedEquipmentForDetails && (
             <>
-              <div className="equipment-general-info-non-print space-y-6 py-4">
+              <div className="equipment-general-info-non-print space-y-4 py-4"> {/* Adjusted space-y */}
                 <div>
                   <h3 className="text-lg font-semibold mb-2 font-headline">Informações Gerais</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-sm"> {/* Adjusted gap-y */}
                     <div><strong className="text-muted-foreground">Tipo:</strong> {selectedEquipmentForDetails.type}</div>
                     <div><strong className="text-muted-foreground">Marca / Modelo:</strong> {selectedEquipmentForDetails.brand}{selectedEquipmentForDetails.model ? ` ${selectedEquipmentForDetails.model}` : ''}</div>
                     <div><strong className="text-muted-foreground">Patrimônio:</strong> {selectedEquipmentForDetails.serialNumber}</div>
-                    <div> {/* Changed p to div here */}
+                    <div>
                       <strong className="text-muted-foreground">Status Atual:</strong>{' '}
                       <Badge className={`${
                         selectedEquipmentForDetails.status === 'Disponível' ? 'bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100' :
@@ -308,16 +317,16 @@ export default function EquipamentosPage() {
                         'bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100'
                       }`}>{selectedEquipmentForDetails.status}</Badge>
                     </div>
-                    {selectedEquipmentForDetails.observations && <div className="md:col-span-2"><strong className="text-muted-foreground">Observações:</strong> {selectedEquipmentForDetails.observations}</div>}
-                    <div className="text-xs text-muted-foreground md:col-span-2">Cadastrado em: {format(parseISO(selectedEquipmentForDetails.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</div>
+                    {selectedEquipmentForDetails.observations && <div className="md:col-span-2 mt-1"><strong className="text-muted-foreground">Observações:</strong> {selectedEquipmentForDetails.observations}</div>}
+                    <div className="text-xs text-muted-foreground md:col-span-2 mt-2">Cadastrado em: {format(parseISO(selectedEquipmentForDetails.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</div>
                   </div>
                 </div>
               </div>
               
-              <div className="equipment-loan-history-section-print space-y-6 py-4 print:py-0">
-                <ScrollArea className="max-h-[calc(70vh-220px)] print:max-h-none print:h-auto print:overflow-visible pr-4">
+              <div className="equipment-loan-history-section-print space-y-4 py-4 print:py-2">
+                <ScrollArea className="max-h-[calc(70vh-220px)] print:max-h-none print:h-auto print:overflow-visible">
                   <div>
-                    <h3 className="text-lg font-semibold mb-2 font-headline print:text-center print:mb-4">Histórico de Cautelas</h3>
+                    <h3 className="text-lg font-semibold mb-2 font-headline print:mb-3">Histórico de Cautelas</h3>
                     {equipmentLoanHistory.length > 0 ? (
                       <Table>
                         <TableCaption className="print:hidden">Histórico de todas as cautelas envolvendo este equipamento.</TableCaption>
@@ -340,9 +349,9 @@ export default function EquipamentosPage() {
                                   : 'N/A'}
                               </TableCell>
                               <TableCell>
-                                  <Badge className={`print:border print:border-gray-400 ${
-                                    loan.status === LoanStatus.ENTREGUE ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100 print-badge-entregue' :
-                                    'bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100 print-badge-devolvido'
+                                  <Badge className={`print:border ${
+                                    loan.status === LoanStatus.ENTREGUE ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100 print-badge-entregue' :
+                                    'bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100 print-badge-devolvido'
                                   }`}>{loan.status}</Badge>
                               </TableCell>
                             </TableRow>
@@ -376,4 +385,5 @@ export default function EquipamentosPage() {
     
 
     
+
 

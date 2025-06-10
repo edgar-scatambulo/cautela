@@ -20,7 +20,7 @@ import { PoliceOfficerForm } from './components/police-officer-form';
 import { useStore } from '@/lib/store';
 import type { PoliceOfficer, Loan } from '@/lib/types';
 import { LoanStatus, UserRole } from '@/lib/types';
-import { Shield, UserPlus, Edit3, Award, Trash2, Eye, Info, UserCircle, Mail, CalendarDays, Printer } from 'lucide-react';
+import { Shield, UserPlus, Edit3, Award, Trash2, Eye, Info, UserCircle, Mail, CalendarDays, Printer as PrinterIconLucide } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PoliceOfficerSchema } from '@/lib/schemas';
 import type { z } from 'zod';
@@ -147,18 +147,24 @@ export default function PoliciaisPage() {
   const handlePrintOfficerHistory = () => {
     if (!selectedOfficerForDetails) return;
     
-    setPrintOfficerHistoryTitle(`Histórico de Cautelas: ${selectedOfficerForDetails.name} - ${selectedOfficerForDetails.rank}`);
+    setPrintOfficerHistoryTitle(`Detalhes do Policial: ${selectedOfficerForDetails.name} - ${selectedOfficerForDetails.rank}`);
     
-    // Timeout to allow state to update and title to render for print
     setTimeout(() => {
       document.body.classList.add('print-officer-details-active');
-      window.onafterprint = () => {
-        document.body.classList.remove('print-officer-details-active');
-        setPrintOfficerHistoryTitle(''); // Clear title
-        window.onafterprint = null; 
-      };
       window.print();
-    }, 100); // Small delay
+       if (typeof window.onafterprint === 'function') {
+        window.onafterprint = () => {
+          document.body.classList.remove('print-officer-details-active');
+          setPrintOfficerHistoryTitle(''); 
+          window.onafterprint = null; 
+        };
+      } else {
+        setTimeout(() => {
+          document.body.classList.remove('print-officer-details-active');
+          setPrintOfficerHistoryTitle('');
+        }, 1000); 
+      }
+    }, 100); 
   };
 
   const canManageOfficers = currentUser?.role === UserRole.ADMIN;
@@ -296,7 +302,7 @@ export default function PoliciaisPage() {
       </AlertDialog>
 
       <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
-        <DialogContent className="sm:max-w-3xl" id="officer-details-dialog-content">
+        <DialogContent className="sm:max-w-3xl print:max-w-none print:w-full print:h-auto print:overflow-visible" id="officer-details-dialog-content">
           <DialogHeader className="dialog-header-non-print">
             <DialogTitle className="flex items-center">
               <UserCircle className="h-6 w-6 mr-2 text-primary" /> 
@@ -309,29 +315,28 @@ export default function PoliciaisPage() {
             )}
           </DialogHeader>
 
-          {/* Título para impressão */}
           <h1 className="hidden print:block print-only-officer-title">{printOfficerHistoryTitle}</h1>
 
           {selectedOfficerForDetails && (
             <>
-              <div className="officer-personal-info-non-print space-y-6 py-4">
+              <div className="officer-personal-info-non-print space-y-4 py-4"> {/* Adjusted space-y */}
                 <div>
                   <h3 className="text-lg font-semibold mb-2 font-headline">Informações Pessoais</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-sm"> {/* Adjusted gap-y */}
                     <p><strong className="text-muted-foreground">Nome de Guerra:</strong> {selectedOfficerForDetails.name}</p>
                     <p><strong className="text-muted-foreground">Posto/Grad.:</strong> {selectedOfficerForDetails.rank}</p>
                     <p><strong className="text-muted-foreground">Contato:</strong> <ContactDisplay contactValue={selectedOfficerForDetails.functionalId} /></p>
                     {selectedOfficerForDetails.unit && <p><strong className="text-muted-foreground">Unidade:</strong> {selectedOfficerForDetails.unit}</p>}
-                    {selectedOfficerForDetails.observations && <p className="md:col-span-2"><strong className="text-muted-foreground">Observações:</strong> {selectedOfficerForDetails.observations}</p>}
-                     <p className="text-xs text-muted-foreground md:col-span-2">Cadastrado em: {format(parseISO(selectedOfficerForDetails.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+                    {selectedOfficerForDetails.observations && <p className="md:col-span-2 mt-1"><strong className="text-muted-foreground">Observações:</strong> {selectedOfficerForDetails.observations}</p>}
+                     <p className="text-xs text-muted-foreground md:col-span-2 mt-2">Cadastrado em: {format(parseISO(selectedOfficerForDetails.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
                   </div>
                 </div>
               </div>
               
-              <div className="officer-loan-history-section-print space-y-6 py-4 print:py-0">
-                <ScrollArea className="max-h-[calc(70vh-150px)] print:max-h-none print:h-auto print:overflow-visible pr-4">
+              <div className="officer-loan-history-section-print space-y-4 py-4 print:py-2">
+                <ScrollArea className="max-h-[calc(70vh-150px)] print:max-h-none print:h-auto print:overflow-visible">
                   <div>
-                    <h3 className="text-lg font-semibold mb-2 font-headline print:text-center print:mb-4">Histórico de Cautelas</h3>
+                    <h3 className="text-lg font-semibold mb-2 font-headline print:mb-3">Histórico de Cautelas</h3>
                     {officerLoanHistory.length > 0 ? (
                       <Table>
                         <TableCaption className="print:hidden">Histórico de todas as cautelas realizadas por este policial.</TableCaption>
@@ -360,9 +365,9 @@ export default function PoliciaisPage() {
                                   : (loan.expectedReturnDate ? `Prev: ${format(parseISO(loan.expectedReturnDate), "dd/MM/yy", { locale: ptBR })}` : 'N/A')}
                               </TableCell>
                               <TableCell>
-                                  <Badge className={`print:border print:border-gray-400 ${
-                                    loan.status === LoanStatus.ENTREGUE ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100 print-badge-entregue' :
-                                    'bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100 print-badge-devolvido'
+                                  <Badge className={`print:border ${
+                                    loan.status === LoanStatus.ENTREGUE ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100 print-badge-entregue' :
+                                    'bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100 print-badge-devolvido'
                                   }`}>{loan.status}</Badge>
                               </TableCell>
                             </TableRow>
@@ -382,7 +387,7 @@ export default function PoliciaisPage() {
           )}
            <DialogFooter className="pt-4 dialog-footer-non-print">
                 <Button onClick={handlePrintOfficerHistory} variant="outline">
-                  <Printer className="mr-2 h-4 w-4" /> Imprimir Histórico
+                  <PrinterIconLucide className="mr-2 h-4 w-4" /> Imprimir Histórico
                 </Button>
                 <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>Fechar</Button>
             </DialogFooter>
@@ -392,3 +397,4 @@ export default function PoliciaisPage() {
   );
 }
     
+
