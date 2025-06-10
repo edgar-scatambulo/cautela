@@ -171,7 +171,7 @@ export default function EquipamentosPage() {
                 <DialogHeader>
                   <DialogTitle>{editingEquipment ? 'Editar Equipamento' : 'Adicionar Novo Equipamento'}</DialogTitle>
                   <ShadDialogDescription>
-                    {editingEquipment ? 'Modifique os detalhes do equipamento abaixo.' : 'Preencha os detalhes do novo equipamento abaixo.'}
+                    {editingEquipment ? 'Modifique os detalhes do equipamento abaixo.' : ''}
                   </ShadDialogDescription>
                 </DialogHeader>
                 <EquipmentForm 
@@ -385,5 +385,6 @@ export default function EquipamentosPage() {
     
 
     
+
 
 
