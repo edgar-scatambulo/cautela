@@ -31,6 +31,8 @@ export function ReportFilters({ officers, onFilterChange }: ReportFiltersProps) 
     onFilterChange({ dateRange, officerId, status, patrimony: patrimony.trim() });
   };
 
+  const sortedOfficers = [...officers].sort((a, b) => a.name.localeCompare(b.name));
+
   return (
     <div className="mb-6 p-4 border rounded-lg bg-card shadow print:hidden">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
@@ -83,7 +85,7 @@ export function ReportFilters({ officers, onFilterChange }: ReportFiltersProps) 
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os policiais</SelectItem>
-              {officers.map((officer) => (
+              {sortedOfficers.map((officer) => (
                 <SelectItem key={officer.id} value={officer.id}>
                   {officer.name} ({officer.rank})
                 </SelectItem>
