@@ -187,7 +187,7 @@ export default function PoliciaisPage() {
                 <DialogHeader>
                   <DialogTitle>{editingOfficer ? 'Editar Dados do Policial' : 'Adicionar Novo Policial'}</DialogTitle>
                   <ShadDialogDescription>
-                     {editingOfficer ? 'Modifique os dados do policial abaixo.' : 'Preencha os dados do novo policial abaixo.'}
+                     {editingOfficer ? 'Modifique os dados do policial abaixo.' : ''}
                   </ShadDialogDescription>
                 </DialogHeader>
                 <PoliceOfficerForm 
@@ -403,3 +403,4 @@ export default function PoliciaisPage() {
   );
 }
     
+
