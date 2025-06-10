@@ -31,6 +31,7 @@ export const SystemUserSchema = z.object({
 export const PoliceOfficerSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, "Nome de Guerra é obrigatório."), // Changed label
+  fullName: z.string().optional(), // Novo campo "Nome Completo"
   functionalId: z.string().min(1, "Contato é obrigatório."), // Changed label and purpose
   rank: z.string().min(1, "Posto/Graduação é obrigatório."),
   unit: z.string().optional(), // Now optional
@@ -46,3 +47,4 @@ export const LoanSchema = z.object({
   expectedReturnDate: z.string().optional(),
   loanObservation: z.string().optional(),
 });
+

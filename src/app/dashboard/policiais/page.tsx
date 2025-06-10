@@ -20,7 +20,7 @@ import { PoliceOfficerForm } from './components/police-officer-form';
 import { useStore } from '@/lib/store';
 import type { PoliceOfficer, Loan } from '@/lib/types';
 import { LoanStatus, UserRole } from '@/lib/types';
-import { Shield, UserPlus, Edit3, Award, Trash2, Eye, Info, UserCircle, Mail, CalendarDays, Printer as PrinterIconLucide } from 'lucide-react';
+import { Shield, UserPlus, Edit3, Award, Trash2, Eye, Info, UserCircle, Mail, CalendarDays, Printer as PrinterIconLucide, CaseSensitive } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PoliceOfficerSchema } from '@/lib/schemas';
 import type { z } from 'zod';
@@ -221,6 +221,11 @@ export default function PoliciaisPage() {
                   <UserCircle className="h-8 w-8 text-primary" /> 
                 </div>
                 <CardTitle className="text-lg font-semibold font-headline">{officer.name}</CardTitle> 
+                {officer.fullName && (
+                  <CardDescription className="flex items-center text-sm text-muted-foreground">
+                    <CaseSensitive className="h-4 w-4 mr-2 shrink-0" />{officer.fullName}
+                  </CardDescription>
+                )}
                 <CardDescription className="flex items-center text-sm">
                   <Award className="h-4 w-4 mr-2 text-muted-foreground" /> {officer.rank}
                 </CardDescription>
@@ -319,11 +324,12 @@ export default function PoliciaisPage() {
 
           {selectedOfficerForDetails && (
             <>
-              <div className="officer-personal-info-non-print space-y-4 py-4"> {/* Adjusted space-y */}
+              <div className="officer-personal-info-non-print space-y-4 py-4"> 
                 <div>
                   <h3 className="text-lg font-semibold mb-2 font-headline">Informações Pessoais</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-sm"> {/* Adjusted gap-y */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-sm"> 
                     <p><strong className="text-muted-foreground">Nome de Guerra:</strong> {selectedOfficerForDetails.name}</p>
+                    {selectedOfficerForDetails.fullName && <p><strong className="text-muted-foreground">Nome Completo:</strong> {selectedOfficerForDetails.fullName}</p>}
                     <p><strong className="text-muted-foreground">Posto/Grad.:</strong> {selectedOfficerForDetails.rank}</p>
                     <p><strong className="text-muted-foreground">Contato:</strong> <ContactDisplay contactValue={selectedOfficerForDetails.functionalId} /></p>
                     {selectedOfficerForDetails.unit && <p><strong className="text-muted-foreground">Unidade:</strong> {selectedOfficerForDetails.unit}</p>}
@@ -397,4 +403,3 @@ export default function PoliciaisPage() {
   );
 }
     
-

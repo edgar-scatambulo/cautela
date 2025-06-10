@@ -27,7 +27,8 @@ interface AppState {
   deleteOfficer: (officerId: string) => void;
 
   addLoan: (loan: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'loanedByUserId' | 'equipment'> & { equipmentIds: string[] }) => Loan;
-  updateLoanStatus: (loanId: string, status: LoanStatus, returnDate?: string, returnTime?: string, returnObservation?: string, returnedToUserId?: string) => void;
+  updateLoanStatus: (loanId: string, status: LoanStatus, equipmentIdsToReturn?: string[], returnDate?: string, returnTime?: string, returnObservation?: string, returnedToUserId?: string) => void;
+
 
   addUser: (userData: Omit<SystemUser, 'id' | 'createdAt' | 'updatedAt'>) => SystemUser;
   updateUser: (userData: Partial<SystemUser> & { id: string }) => void;
@@ -67,8 +68,8 @@ export const useStore = create<AppState>()(
       ],
       users: [initialAdminUser],
       officers: [
-        { id: initialOfficerId1, name: 'SGT Silva', functionalId: 'silva@email.com', rank: 'Sargento', unit: '1º BPM', createdAt: new Date(0).toISOString(), updatedAt: new Date(0).toISOString() },
-        { id: initialOfficerId2, name: 'CB Costa', functionalId: '(11) 98765-4321', rank: 'Cabo', unit: 'ROTAM', createdAt: new Date(0).toISOString(), updatedAt: new Date(0).toISOString() },
+        { id: initialOfficerId1, name: 'SGT Silva', fullName: 'Fulano Silva de Tal', functionalId: 'silva@email.com', rank: 'Sargento', unit: '1º BPM', createdAt: new Date(0).toISOString(), updatedAt: new Date(0).toISOString() },
+        { id: initialOfficerId2, name: 'CB Costa', fullName: 'Beltrano Costa Oliveira', functionalId: '(11) 98765-4321', rank: 'Cabo', unit: 'ROTAM', createdAt: new Date(0).toISOString(), updatedAt: new Date(0).toISOString() },
       ],
       loans: [],
 
@@ -179,25 +180,37 @@ export const useStore = create<AppState>()(
         });
         return newLoan;
       },
-      updateLoanStatus: (loanId, status, returnDate, returnTime, returnObservation, returnedToUserId) => {
+      updateLoanStatus: (loanId, status, equipmentIdsToReturn, returnDate, returnTime, returnObservation, returnedToUserId) => {
         set(state => {
           const loanIndex = state.loans.findIndex(l => l.id === loanId);
           if (loanIndex !== -1) {
-            state.loans[loanIndex].status = status;
-            state.loans[loanIndex].updatedAt = new Date().toISOString();
-            if (status === LoanStatus.DEVOLVIDO) {
-              state.loans[loanIndex].actualReturnDate = returnDate || new Date().toISOString().split('T')[0];
-              state.loans[loanIndex].actualReturnTime = returnTime || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit'});
-              state.loans[loanIndex].returnObservation = returnObservation;
-              state.loans[loanIndex].returnedToUserId = returnedToUserId || get().currentUser?.id;
-              state.loans[loanIndex].equipment.forEach(eq => {
-                const equipmentIndex = state.equipments.findIndex(e => e.id === eq.id);
-                if (equipmentIndex !== -1) {
-                  state.equipments[equipmentIndex].status = 'Disponível';
-                  state.equipments[equipmentIndex].updatedAt = new Date().toISOString();
+            const currentLoan = state.loans[loanIndex];
+            currentLoan.status = status; // Update status to Devolvido
+            currentLoan.updatedAt = new Date().toISOString();
+            currentLoan.actualReturnDate = returnDate || new Date().toISOString().split('T')[0];
+            currentLoan.actualReturnTime = returnTime || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit'});
+            currentLoan.returnObservation = returnObservation;
+            currentLoan.returnedToUserId = returnedToUserId || get().currentUser?.id;
+
+            const idsToUpdate = equipmentIdsToReturn && equipmentIdsToReturn.length > 0 
+              ? equipmentIdsToReturn 
+              : currentLoan.equipment.map(eq => eq.id); // If no specific IDs, assume all are returned
+
+            idsToUpdate.forEach(eqId => {
+              const equipmentIndex = state.equipments.findIndex(e => e.id === eqId);
+              if (equipmentIndex !== -1) {
+                // Only change status if it was part of this loan
+                if (currentLoan.equipment.some(loanEq => loanEq.id === eqId)) {
+                     state.equipments[equipmentIndex].status = 'Disponível';
+                     state.equipments[equipmentIndex].updatedAt = new Date().toISOString();
                 }
-              });
-            }
+              }
+            });
+
+            // Check if all equipment in the loan have been marked as 'Disponível'
+            // This logic assumes that if any equipment from the loan is returned, the loan status becomes Devolvido.
+            // If partial returns should keep the loan 'Entregue', this logic needs adjustment.
+            // For now, any return action makes the whole loan 'Devolvido'.
           }
         });
       },

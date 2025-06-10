@@ -28,10 +28,11 @@ export function PoliceOfficerForm({ onSubmit, defaultValues, isSubmitting }: Pol
     resolver: zodResolver(PoliceOfficerSchema),
     defaultValues: {
       name: defaultValues?.name || "", // Will be "Nome de Guerra"
+      fullName: defaultValues?.fullName || "", // Novo campo "Nome Completo"
       functionalId: defaultValues?.functionalId || "", // Will be "Contato"
       rank: defaultValues?.rank || "",
-      unit: defaultValues?.unit || "", // Remains for existing data, but not in form
-      observations: defaultValues?.observations || "", // Remains for existing data, but not in form
+      unit: defaultValues?.unit || "", 
+      observations: defaultValues?.observations || "", 
     },
   });
 
@@ -46,6 +47,19 @@ export function PoliceOfficerForm({ onSubmit, defaultValues, isSubmitting }: Pol
               <FormLabel>Nome de Guerra</FormLabel>
               <FormControl>
                 <Input placeholder="Ex: SGT Silva" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="fullName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nome Completo (Opcional)</FormLabel>
+              <FormControl>
+                <Input placeholder="Ex: João da Silva Sauro" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
