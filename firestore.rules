@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Funções auxiliares para verificar autenticação e cargo do usuário
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isUser(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      // Verifica se o usuário está logado e se o cargo é 'Administrador'
+      return isSignedIn() && getUserData().data.role == 'Administrador';
+    }
+
+    function isOperator() {
+      // Um Administrador tem todas as permissões de um Operador
+      let userRole = getUserData().data.role;
+      return isSignedIn() && (userRole == 'Operador' || userRole == 'Administrador');
+    }
+
+    // Regras para a coleção 'users'
+    match /users/{userId} {
+      // Admins podem ver qualquer perfil. Usuários normais só podem ver o próprio perfil.
+      allow get: if isAdmin() || isUser(userId);
+      // Apenas Admins podem listar todos os usuários.
+      allow list: if isAdmin();
+      // Apenas Admins podem criar ou atualizar usuários.
+      allow create, update: if isAdmin();
+      // Excluir usuários pelo app está desabilitado por segurança.
+      allow delete: if false;
+    }
+
+    // Regras para 'equipments'
+    match /equipments/{equipmentId} {
+      // Qualquer usuário autenticado pode ler os dados.
+      allow read: if isSignedIn();
+      // Apenas Admins podem criar, atualizar ou excluir.
+      allow write: if isAdmin();
+    }
+    
+    // Regras para 'officers'
+    match /officers/{officerId} {
+      // Qualquer usuário autenticado pode ler os dados.
+      allow read: if isSignedIn();
+      // Apenas Admins podem criar, atualizar ou excluir.
+      allow write: if isAdmin();
+    }
+
+    // Regras para 'loans' (cautelas)
+    match /loans/{loanId} {
+      // Qualquer usuário autenticado pode ler os dados.
+      allow read: if isSignedIn();
+      // Operadores e Admins podem criar e atualizar cautelas.
+      allow write: if isOperator();
+    }
+  }
+}
