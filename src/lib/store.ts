@@ -281,7 +281,7 @@ export const useStore = create<AppState>((set, get) => ({
     await batch.commit();
   },
 
-  updateLoanStatus: async (loanId, status, equipmentIdsToReturn, returnDate, returnTime, returnObservation) => {
+  updateLoanStatus: async (loanId, status, equipmentIdsToReturn, returnDate, returnTime, returnObservation, returnedToUserId) => {
     if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
     const currentUser = get().currentUser;
     if (!currentUser) throw new Error("Usuário não autenticado.");
@@ -295,7 +295,7 @@ export const useStore = create<AppState>((set, get) => ({
       actualReturnDate: returnDate || new Date().toISOString().split('T')[0],
       actualReturnTime: returnTime || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
       returnObservation: returnObservation || '',
-      returnedToUserId: currentUser.id,
+      returnedToUserId: returnedToUserId || currentUser.id,
       updatedAt: serverTimestamp(),
     });
 
