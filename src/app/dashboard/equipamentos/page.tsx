@@ -249,8 +249,9 @@ export default function EquipamentosPage() {
               <DialogHeader>
                   <DialogTitle>Importar Equipamentos em Lote</DialogTitle>
                   <ShadDialogDescription>
-                      Faça o upload de um arquivo CSV. Colunas obrigatórias: <b>type</b>, <b>brand</b>, <b>serialNumber</b>. Colunas opcionais: <b>status</b> (padrão 'Disponível'), <b>observations</b>, <b>model</b>.
-                      Valores para <b>type</b>: Celular, Impressora, Rádio.
+                      Faça o upload de um arquivo CSV. O cabeçalho deve incluir as colunas obrigatórias: <b>type</b>, <b>brand</b>, <b>serialNumber</b>.
+                      Colunas opcionais: <b>model</b>, <b>status</b> (padrão 'Disponível'), <b>observations</b>.
+                      Os valores para <b>type</b> devem ser exatamente 'Celular', 'Impressora' ou 'Rádio'.
                   </ShadDialogDescription>
               </DialogHeader>
               <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
