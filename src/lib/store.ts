@@ -61,6 +61,7 @@ interface AppState {
 
   // Equipment Actions
   addEquipment: (equipmentData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  addMultipleEquipments: (equipmentsData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>[]) => Promise<void>;
   updateEquipment: (equipment: Equipment) => Promise<void>;
   deleteEquipment: (equipmentId: string) => Promise<void>;
 
@@ -211,7 +212,7 @@ export const useStore = create<AppState>((set, get) => ({
     const allUsersSnap = await getDocs(usersCollectionRef);
 
     if (!allUsersSnap.empty) {
-        throw new Error("O sistema já possui um usuário administrador. O cadastro pela página de signup só pode ser feito uma vez.");
+        throw new Error("O sistema já possui um usuário administrador. O cadastro só pode ser feito uma vez.");
     }
 
     const usernameQuery = query(usersCollectionRef, where('username', '==', signupData.username));
@@ -284,11 +285,57 @@ export const useStore = create<AppState>((set, get) => ({
 
   addEquipment: async (equipmentData) => {
     if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
+    const q = query(collection(db, 'equipments'), where('serialNumber', '==', equipmentData.serialNumber));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+        throw new Error(`Equipamento com o patrimônio '${equipmentData.serialNumber}' já existe.`);
+    }
+
     await addDoc(collection(db, 'equipments'), {
       ...equipmentData,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
+  },
+
+  addMultipleEquipments: async (equipmentsData) => {
+    if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
+
+    const serialNumbersInCsv = equipmentsData.map(e => e.serialNumber);
+    const duplicateSerialNumbersInCsv = serialNumbersInCsv.filter((item, index) => serialNumbersInCsv.indexOf(item) !== index);
+    if (duplicateSerialNumbersInCsv.length > 0) {
+        throw new Error(`O arquivo CSV contém números de patrimônio duplicados: ${duplicateSerialNumbersInCsv.join(', ')}`);
+    }
+
+    const equipmentsCollectionRef = collection(db, 'equipments');
+    const existingEquipmentsSnapshot = await getDocs(query(equipmentsCollectionRef, where('serialNumber', 'in', serialNumbersInCsv)));
+    
+    const existingSerialNumbers = existingEquipmentsSnapshot.docs.map(doc => doc.data().serialNumber);
+    if (existingSerialNumbers.length > 0) {
+        throw new Error(`Os seguintes números de patrimônio já existem no banco de dados: ${existingSerialNumbers.join(', ')}`);
+    }
+
+    const batch = writeBatch(db);
+    
+    equipmentsData.forEach(equipment => {
+      const newEquipmentRef = doc(collection(db, 'equipments'));
+      
+      const cleanedEquipmentData: { [key: string]: any } = { ...equipment };
+
+      Object.keys(cleanedEquipmentData).forEach(key => {
+        if (cleanedEquipmentData[key] === undefined) {
+          delete cleanedEquipmentData[key];
+        }
+      });
+      
+      batch.set(newEquipmentRef, {
+        ...cleanedEquipmentData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    });
+
+    await batch.commit();
   },
 
   updateEquipment: async (equipment) => {
@@ -330,10 +377,8 @@ export const useStore = create<AppState>((set, get) => ({
     officersData.forEach(officer => {
       const newOfficerRef = doc(collection(db, 'officers'));
       
-      // Create a clean copy to avoid modifying the original object
       const cleanedOfficerData: { [key: string]: any } = { ...officer };
 
-      // Remove any keys with `undefined` values, which Firestore rejects
       Object.keys(cleanedOfficerData).forEach(key => {
         if (cleanedOfficerData[key] === undefined) {
           delete cleanedOfficerData[key];
@@ -421,3 +466,5 @@ export const useStore = create<AppState>((set, get) => ({
 export const AppStateProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   return children;
 };
+
+    

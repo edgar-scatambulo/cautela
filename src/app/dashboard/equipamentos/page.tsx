@@ -19,7 +19,7 @@ import {
 import { EquipmentForm } from './components/equipment-form';
 import { useStore } from '@/lib/store';
 import { Equipment, EquipmentType, Loan, PoliceOfficer, LoanStatus, UserRole } from '@/lib/types';
-import { Smartphone, Printer as PrinterIconLucide, Radio, PlusCircle, Edit3, Trash2, PackageSearch, Eye, User, CalendarDays, Clock, Info } from 'lucide-react';
+import { Smartphone, Printer as PrinterIconLucide, Radio, PlusCircle, Edit3, Trash2, PackageSearch, Eye, User, CalendarDays, Clock, Info, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { EquipmentSchema } from '@/lib/schemas';
 import type { z } from 'zod';
@@ -29,6 +29,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import Papa from 'papaparse';
+
 
 const EquipmentIcon = ({ type }: { type: EquipmentType }) => {
   switch (type) {
@@ -48,9 +52,14 @@ const getOfficerNameLocal = (officerId: string, officers: PoliceOfficer[]): stri
   return officer ? `${officer.name} (${officer.rank})` : 'Desconhecido';
 };
 
+type ParsedEquipment = z.infer<typeof EquipmentSchema> & {
+    errors?: z.ZodIssue[];
+    originalRow: any;
+};
+
 
 export default function EquipamentosPage() {
-  const { equipments, addEquipment, updateEquipment, deleteEquipment, loans, officers, currentUser } = useStore();
+  const { equipments, addEquipment, updateEquipment, deleteEquipment, loans, officers, currentUser, addMultipleEquipments } = useStore();
   const { toast } = useToast();
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingEquipment, setEditingEquipment] = React.useState<Equipment | undefined>(undefined);
@@ -62,6 +71,10 @@ export default function EquipamentosPage() {
   const [selectedEquipmentForDetails, setSelectedEquipmentForDetails] = React.useState<Equipment | null>(null);
   const [equipmentLoanHistory, setEquipmentLoanHistory] = React.useState<Loan[]>([]);
   const [printEquipmentHistoryTitle, setPrintEquipmentHistoryTitle] = React.useState('');
+
+  const [isImportDialogOpen, setIsImportDialogOpen] = React.useState(false);
+  const [isImporting, setIsImporting] = React.useState(false);
+  const [parsedData, setParsedData] = React.useState<ParsedEquipment[]>([]);
 
 
   const handleFormSubmit = async (values: z.infer<typeof EquipmentSchema>) => {
@@ -150,8 +163,169 @@ export default function EquipamentosPage() {
       }
     }, 100); 
   };
+  
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setParsedData([]);
+      return;
+    }
+
+    Papa.parse<any>(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const validatedData = results.data.map(row => {
+          // Normalize serialNumber to uppercase before validation
+          const normalizedRow = { ...row, serialNumber: row.serialNumber?.toUpperCase() };
+
+          const result = EquipmentSchema.omit({id: true}).safeParse({
+            ...normalizedRow,
+            status: normalizedRow.status || 'Disponível',
+            observations: normalizedRow.observations || undefined,
+            model: normalizedRow.model || undefined,
+          });
+
+          if (result.success) {
+            return { ...result.data, originalRow: row, errors: undefined };
+          } else {
+            return {
+              ...result.error,
+              errors: result.error.issues,
+              originalRow: row,
+              brand: row.brand || 'Inválido',
+              serialNumber: row.serialNumber || 'Inválido',
+              type: row.type || 'Inválido',
+            };
+          }
+        });
+        setParsedData(validatedData as ParsedEquipment[]);
+      },
+      error: (error) => {
+        toast({ title: "Erro ao ler CSV", description: error.message, variant: "destructive" });
+        setParsedData([]);
+      }
+    });
+  };
+  
+  const handleImportConfirm = async () => {
+    const validEquipments = parsedData
+      .filter(p => !p.errors)
+      .map(p => {
+        const { errors, originalRow, ...equipmentData } = p;
+        return equipmentData as Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>;
+      });
+
+    if (validEquipments.length === 0) {
+      toast({ title: "Nenhum equipamento válido para importar", variant: "destructive" });
+      return;
+    }
+    
+    setIsImporting(true);
+    try {
+        await addMultipleEquipments(validEquipments);
+        toast({ title: "Importação Concluída", description: `${validEquipments.length} equipamentos foram importados com sucesso.` });
+        setIsImportDialogOpen(false);
+        setParsedData([]);
+    } catch (error: any) {
+        toast({ title: "Erro na Importação", description: error.message, variant: "destructive" });
+    } finally {
+        setIsImporting(false);
+    }
+  };
+
 
   const canManageEquipments = currentUser?.role === UserRole.ADMIN;
+  
+  const pageActions = canManageEquipments ? (
+    <div className="flex gap-2">
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline">
+              <Upload className="mr-2 h-4 w-4" /> Importar CSV
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-4xl">
+              <DialogHeader>
+                  <DialogTitle>Importar Equipamentos em Lote</DialogTitle>
+                  <ShadDialogDescription>
+                      Faça o upload de um arquivo CSV. Colunas obrigatórias: <b>type</b>, <b>brand</b>, <b>serialNumber</b>. Colunas opcionais: <b>status</b> (padrão 'Disponível'), <b>observations</b>, <b>model</b>.
+                      Valores para <b>type</b>: Celular, Impressora, Rádio.
+                  </ShadDialogDescription>
+              </DialogHeader>
+              <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
+                  <Label htmlFor="csv-file-equip">Arquivo CSV</Label>
+                  <Input id="csv-file-equip" type="file" accept=".csv" onChange={handleFileChange} />
+              </div>
+              {parsedData.length > 0 && (
+                  <ScrollArea className="h-72 w-full rounded-md border">
+                      <Table>
+                          <TableHeader>
+                              <TableRow>
+                                  <TableHead>Marca/Modelo</TableHead>
+                                  <TableHead>Patrimônio</TableHead>
+                                  <TableHead>Tipo</TableHead>
+                                  <TableHead>Status</TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {parsedData.map((equip, index) => (
+                                  <TableRow key={index}>
+                                      <TableCell>{equip.originalRow.brand || '---'}</TableCell>
+                                      <TableCell>{equip.originalRow.serialNumber || '---'}</TableCell>
+                                      <TableCell>{equip.originalRow.type || '---'}</TableCell>
+                                      <TableCell>
+                                          {equip.errors ? (
+                                            <TooltipProvider>
+                                              <Tooltip>
+                                                <TooltipTrigger>
+                                                  <Badge variant="destructive">Inválido</Badge>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                  <ul className="list-disc list-inside text-sm">
+                                                    {equip.errors.map(e => <li key={e.path.join('.')}>{e.message}</li>)}
+                                                  </ul>
+                                                </TooltipContent>
+                                              </Tooltip>
+                                            </TooltipProvider>
+                                          ) : (
+                                              <Badge className="bg-green-500 hover:bg-green-600">Válido</Badge>
+                                          )}
+                                      </TableCell>
+                                  </TableRow>
+                              ))}
+                          </TableBody>
+                      </Table>
+                  </ScrollArea>
+              )}
+              <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>Cancelar</Button>
+                  <Button onClick={handleImportConfirm} disabled={isImporting || parsedData.filter(p => !p.errors).length === 0}>
+                      {isImporting ? "Importando..." : `Importar ${parsedData.filter(p => !p.errors).length} Válidos`}
+                  </Button>
+              </DialogFooter>
+          </DialogContent>
+      </Dialog>
+      <Dialog open={isFormDialogOpen} onOpenChange={(open) => { setIsFormDialogOpen(open); if(!open) setEditingEquipment(undefined); }}>
+        <DialogTrigger asChild>
+          <Button onClick={openAddDialog}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Equipamento
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingEquipment ? 'Editar Equipamento' : 'Adicionar Novo Equipamento'}</DialogTitle>
+          </DialogHeader>
+          <EquipmentForm 
+            onSubmit={handleFormSubmit} 
+            defaultValues={editingEquipment}
+            isSubmitting={isSubmitting}
+            isEditing={!!editingEquipment}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
+  ) : null;
 
   return (
     <TooltipProvider>
@@ -159,31 +333,7 @@ export default function EquipamentosPage() {
         title="Gerenciamento de Equipamentos"
         description="Cadastre, visualize e edite os equipamentos."
         icon={PackageSearch}
-        actions={
-          canManageEquipments ? (
-            <Dialog open={isFormDialogOpen} onOpenChange={(open) => { setIsFormDialogOpen(open); if(!open) setEditingEquipment(undefined); }}>
-              <DialogTrigger asChild>
-                <Button onClick={openAddDialog}>
-                  <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Equipamento
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>{editingEquipment ? 'Editar Equipamento' : 'Adicionar Novo Equipamento'}</DialogTitle>
-                  <ShadDialogDescription>
-                    {editingEquipment ? 'Modifique os detalhes do equipamento abaixo.' : ''}
-                  </ShadDialogDescription>
-                </DialogHeader>
-                <EquipmentForm 
-                  onSubmit={handleFormSubmit} 
-                  defaultValues={editingEquipment}
-                  isSubmitting={isSubmitting}
-                  isEditing={!!editingEquipment}
-                />
-              </DialogContent>
-            </Dialog>
-          ) : null
-        }
+        actions={pageActions}
       />
       
       {equipments.length === 0 ? (
@@ -380,3 +530,5 @@ export default function EquipamentosPage() {
     </TooltipProvider>
   );
 }
+
+    
