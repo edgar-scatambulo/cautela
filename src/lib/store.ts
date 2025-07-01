@@ -71,6 +71,8 @@ interface AppState {
   updateLoanStatus: (loanId: string, status: LoanStatus, equipmentIdsToReturn?: string[], returnDate?: string, returnTime?: string, returnObservation?: string, returnedToUserId?: string) => Promise<void>;
 }
 
+const FIREBASE_NOT_CONFIGURED_ERROR = "Firebase não está configurado. Verifique as variáveis de ambiente do seu projeto.";
+
 export const useStore = create<AppState>((set, get) => ({
   authInitialized: false,
   isLoading: true,
@@ -81,6 +83,11 @@ export const useStore = create<AppState>((set, get) => ({
   loans: [],
 
   init: () => {
+    if (!auth || !db) {
+      console.warn(FIREBASE_NOT_CONFIGURED_ERROR);
+      set({ authInitialized: true, isLoading: false, currentUser: null });
+      return () => {}; // Return a no-op unsubscribe function
+    }
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const userDocRef = doc(db, 'users', firebaseUser.uid);
@@ -126,6 +133,8 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   login: async ({ username, password }) => {
+    if (!auth || !db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
+
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('username', '==', username));
     const querySnapshot = await getDocs(q);
@@ -150,11 +159,15 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   logout: async () => {
-    await signOut(auth);
+    if (auth) {
+      await signOut(auth);
+    }
     set({ currentUser: null, equipments: [], officers: [], loans: [], users: [] });
   },
 
   addUser: async (userData) => {
+    if (!auth || !db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
+
     if (!userData.password) throw new Error("Senha é obrigatória para criar usuário.");
     
     // Check for unique username
@@ -178,6 +191,8 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateUser: async (userData) => {
+    if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
+
     const { id, ...dataToUpdate } = userData;
     if (!id) throw new Error("ID do usuário é necessário para atualização.");
     const userDocRef = doc(db, 'users', id);
@@ -187,6 +202,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   addEquipment: async (equipmentData) => {
+    if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
     await addDoc(collection(db, 'equipments'), {
       ...equipmentData,
       createdAt: serverTimestamp(),
@@ -195,12 +211,14 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateEquipment: async (equipment) => {
+    if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
     const { id, ...dataToUpdate } = equipment;
     const equipDocRef = doc(db, 'equipments', id);
     await updateDoc(equipDocRef, { ...dataToUpdate, updatedAt: serverTimestamp() });
   },
 
   deleteEquipment: async (equipmentId) => {
+    if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
     const loansQuery = query(collection(db, 'loans'), where('equipmentIds', 'array-contains', equipmentId), where('status', '==', 'Entregue'));
     const loansSnap = await getDocs(loansQuery);
     if (!loansSnap.empty) {
@@ -210,6 +228,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   addOfficer: async (officerData) => {
+    if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
     await addDoc(collection(db, 'officers'), {
       ...officerData,
       createdAt: serverTimestamp(),
@@ -218,12 +237,14 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateOfficer: async (officer) => {
+    if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
     const { id, ...dataToUpdate } = officer;
     const officerDocRef = doc(db, 'officers', id);
     await updateDoc(officerDocRef, { ...dataToUpdate, updatedAt: serverTimestamp() });
   },
 
   deleteOfficer: async (officerId) => {
+    if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
     const loansQuery = query(collection(db, 'loans'), where('officerId', '==', officerId), where('status', '==', 'Entregue'));
     const loansSnap = await getDocs(loansQuery);
     if (!loansSnap.empty) {
@@ -233,6 +254,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   addLoan: async (loanData) => {
+    if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
     const currentUser = get().currentUser;
     if (!currentUser) throw new Error("Usuário não autenticado para registrar cautela.");
 
@@ -258,6 +280,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateLoanStatus: async (loanId, status, equipmentIdsToReturn, returnDate, returnTime, returnObservation) => {
+    if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
     const currentUser = get().currentUser;
     if (!currentUser) throw new Error("Usuário não autenticado.");
 
