@@ -207,7 +207,7 @@ export const useStore = create<AppState>((set, get) => ({
     const allUsersSnap = await getDocs(usersCollectionRef);
 
     if (!allUsersSnap.empty) {
-        throw new Error("O cadastro de novos usuários está desabilitado. Apenas um usuário administrador pode ser criado através desta página.");
+        throw new Error("O sistema já possui um usuário cadastrado. O cadastro de administrador pela página de signup só pode ser feito uma vez.");
     }
 
     const usernameQuery = query(usersCollectionRef, where('username', '==', signupData.username));
