@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LoginSchema } from "@/lib/schemas";
 import { useStore } from "@/lib/store";
 import { LogIn } from "lucide-react";
+import Link from "next/link";
 
 export function LoginForm() {
   const router = useRouter();
@@ -94,6 +95,12 @@ export function LoginForm() {
             </Button>
           </form>
         </Form>
+        <div className="mt-4 text-center text-sm">
+          Não tem uma conta?{" "}
+          <Link href="/signup" className="underline text-primary hover:text-primary/80">
+            Crie o usuário administrador
+          </Link>
+        </div>
       </CardContent>
     </Card>
   );

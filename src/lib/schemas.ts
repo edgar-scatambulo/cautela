@@ -7,6 +7,13 @@ export const LoginSchema = z.object({
   password: z.string().min(1, "Senha é obrigatória."),
 });
 
+export const SignupSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório."),
+  email: z.string().email("Email inválido."),
+  username: z.string().min(3, "Nome de usuário deve ter no mínimo 3 caracteres."),
+  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres."),
+});
+
 export const EquipmentSchema = z.object({
   id: z.string().optional(),
   type: z.nativeEnum(EquipmentType, { errorMap: () => ({ message: "Tipo de equipamento é obrigatório."}) }),
@@ -47,4 +54,3 @@ export const LoanSchema = z.object({
   expectedReturnDate: z.string().optional(),
   loanObservation: z.string().optional(),
 });
-

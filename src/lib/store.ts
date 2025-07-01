@@ -52,6 +52,7 @@ interface AppState {
   init: () => () => void; // Returns the unsubscribe function
   login: (credentials: Pick<SystemUser, 'email' | 'password'>) => Promise<void>;
   logout: () => Promise<void>;
+  signup: (signupData: Omit<SystemUser, 'id' | 'createdAt' | 'updatedAt' | 'role' | 'isActive'>) => Promise<void>;
   
   // User Actions
   addUser: (userData: Omit<SystemUser, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
@@ -196,6 +197,40 @@ export const useStore = create<AppState>((set, get) => ({
     }
     // The onAuthStateChanged listener in init() will handle clearing the state.
     set({ currentUser: null, equipments: [], officers: [], loans: [], users: [] });
+  },
+
+  signup: async (signupData) => {
+    if (!auth || !db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
+    if (!signupData.password) throw new Error("Senha é obrigatória para criar usuário.");
+
+    const usersCollectionRef = collection(db, 'users');
+    const allUsersSnap = await getDocs(usersCollectionRef);
+
+    if (!allUsersSnap.empty) {
+        throw new Error("O cadastro de novos usuários está desabilitado. Apenas um usuário administrador pode ser criado através desta página.");
+    }
+
+    const usernameQuery = query(usersCollectionRef, where('username', '==', signupData.username));
+    const usernameSnap = await getDocs(usernameQuery);
+    if (!usernameSnap.empty) throw new Error("Nome de usuário já existe.");
+
+    const emailQuery = query(usersCollectionRef, where('email', '==', signupData.email));
+    const emailSnap = await getDocs(emailQuery);
+    if (!emailSnap.empty) throw new Error("Este email já está em uso.");
+
+    const userCredential = await createUserWithEmailAndPassword(auth, signupData.email, signupData.password);
+    const firebaseUser = userCredential.user;
+
+    const userDocRef = doc(db, 'users', firebaseUser.uid);
+    const { password, ...userDataForFirestore } = signupData;
+
+    await setDoc(userDocRef, {
+        ...userDataForFirestore,
+        role: UserRole.ADMIN,
+        isActive: true,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+    });
   },
 
   addUser: async (userData) => {
