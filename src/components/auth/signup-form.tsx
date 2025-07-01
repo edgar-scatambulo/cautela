@@ -46,9 +46,13 @@ export function SignupForm() {
       });
       router.push("/login");
     } catch (error: any) {
+       let description = error.message || "Ocorreu um erro desconhecido.";
+       if (error.code === 'auth/configuration-not-found') {
+           description = "Configuração do Firebase não encontrada. Verifique se o arquivo .env.local está correto e reinicie o servidor de desenvolvimento.";
+       }
        toast({
         title: "Erro ao Criar Conta",
-        description: error.message || "Ocorreu um erro desconhecido.",
+        description: description,
         variant: "destructive",
       });
     }
