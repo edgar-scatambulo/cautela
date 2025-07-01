@@ -15,8 +15,8 @@ let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
 
-// Initialize Firebase only if the API key is provided
-if (firebaseConfig.apiKey) {
+// Initialize Firebase only if the essential keys are provided
+if (firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId) {
   try {
     app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
@@ -30,7 +30,7 @@ if (firebaseConfig.apiKey) {
   }
 } else {
     // This message will appear in the server console during build/run
-    console.warn("\n\n⚠️ Firebase credentials are not set. The application will not connect to Firebase until the environment variables are configured.\n");
+    console.warn("\n\n⚠️ Firebase credentials are not set correctly. The application will not connect to Firebase until the environment variables are configured in a .env.local file.\n");
 }
 
 
