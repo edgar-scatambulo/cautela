@@ -211,7 +211,7 @@ export const useStore = create<AppState>((set, get) => ({
     const allUsersSnap = await getDocs(usersCollectionRef);
 
     if (!allUsersSnap.empty) {
-        throw new Error("O sistema já possui um usuário cadastrado. O cadastro de administrador pela página de signup só pode ser feito uma vez.");
+        throw new Error("O sistema já possui um usuário administrador. O cadastro pela página de signup só pode ser feito uma vez.");
     }
 
     const usernameQuery = query(usersCollectionRef, where('username', '==', signupData.username));
@@ -327,12 +327,21 @@ export const useStore = create<AppState>((set, get) => ({
     if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
     const batch = writeBatch(db);
     
-    // Note: This does not check for duplicates within the batch or against the DB
-    // for performance reasons. Handle duplicates upstream or post-import if necessary.
-    officersData.forEach(officerData => {
+    officersData.forEach(officer => {
       const newOfficerRef = doc(collection(db, 'officers'));
+      
+      // Create a clean copy to avoid modifying the original object
+      const cleanedOfficerData: { [key: string]: any } = { ...officer };
+
+      // Remove any keys with `undefined` values, which Firestore rejects
+      Object.keys(cleanedOfficerData).forEach(key => {
+        if (cleanedOfficerData[key] === undefined) {
+          delete cleanedOfficerData[key];
+        }
+      });
+      
       batch.set(newOfficerRef, {
-        ...officerData,
+        ...cleanedOfficerData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
