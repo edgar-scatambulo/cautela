@@ -29,7 +29,7 @@ export function LoginForm() {
   const form = useForm<z.infer<typeof LoginSchema>>({
     resolver: zodResolver(LoginSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
   });
@@ -39,13 +39,13 @@ export function LoginForm() {
       await login(values);
       toast({
         title: "Login bem-sucedido!",
-        description: `Login efetuado com sucesso.`,
+        description: `Login efetuado com sucesso. Redirecionando...`,
       });
       router.push("/dashboard");
     } catch (error: any) {
        toast({
         title: "Erro de Login",
-        description: error.message || "Nome de usuário ou senha inválidos.",
+        description: error.message || "Ocorreu um erro desconhecido.",
         variant: "destructive",
       });
     }
@@ -65,12 +65,12 @@ export function LoginForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
-              name="username"
+              name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Usuário</FormLabel>
+                  <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="seu.usuario" {...field} />
+                    <Input type="email" placeholder="seu.email@exemplo.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

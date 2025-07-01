@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { auth, db } from './firebase';
 import {
@@ -24,7 +25,7 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import type { Equipment, SystemUser, PoliceOfficer, Loan } from './types';
-import { LoanStatus } from './types';
+import { LoanStatus, UserRole } from './types';
 
 // Helper to convert Firestore Timestamps to ISO strings
 const convertTimestamps = (docData: any) => {
@@ -49,7 +50,7 @@ interface AppState {
 
   // Auth Actions
   init: () => () => void; // Returns the unsubscribe function
-  login: (credentials: Pick<SystemUser, 'username' | 'password'>) => Promise<void>;
+  login: (credentials: Pick<SystemUser, 'email' | 'password'>) => Promise<void>;
   logout: () => Promise<void>;
   
   // User Actions
@@ -87,104 +88,135 @@ export const useStore = create<AppState>((set, get) => ({
     if (!auth || !db) {
       console.warn(FIREBASE_NOT_CONFIGURED_ERROR);
       set({ authInitialized: true, isLoading: false, currentUser: null });
-      return () => {}; // Return a no-op unsubscribe function
+      return () => {};
     }
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+
+    let collectionUnsubscribers: (() => void)[] = [];
+
+    const authUnsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Clean up previous listeners before setting up new ones
+      collectionUnsubscribers.forEach(unsub => unsub());
+      collectionUnsubscribers = [];
+
       if (firebaseUser) {
+        set({ isLoading: true });
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         const userDocSnap = await getDoc(userDocRef);
+
         if (userDocSnap.exists()) {
           const userData = convertTimestamps({ id: userDocSnap.id, ...userDocSnap.data() }) as SystemUser;
-          set({ currentUser: userData, isLoading: true });
+          set({ currentUser: userData });
 
-          // Once authenticated, set up real-time listeners for all collections
-          const unsubscribers = [
+          // Setup real-time listeners for collections
+          collectionUnsubscribers.push(
             onSnapshot(collection(db, 'equipments'), (snapshot) => {
               const equipments = snapshot.docs.map(doc => convertTimestamps({ id: doc.id, ...doc.data() })) as Equipment[];
               set({ equipments });
-            }),
+            })
+          );
+          collectionUnsubscribers.push(
             onSnapshot(collection(db, 'officers'), (snapshot) => {
               const officers = snapshot.docs.map(doc => convertTimestamps({ id: doc.id, ...doc.data() })) as PoliceOfficer[];
               set({ officers });
-            }),
+            })
+          );
+          collectionUnsubscribers.push(
             onSnapshot(collection(db, 'loans'), (snapshot) => {
               const loans = snapshot.docs.map(doc => convertTimestamps({ id: doc.id, ...doc.data() })) as Loan[];
               set({ loans });
-            }),
-             onSnapshot(collection(db, 'users'), (snapshot) => {
-              const users = snapshot.docs.map(doc => convertTimestamps({ id: doc.id, ...doc.data() })) as SystemUser[];
-              set({ users });
-            }),
-          ];
+            })
+          );
+
+          // Only Admins can listen to the full users collection
+          if (userData.role === UserRole.ADMIN) {
+            collectionUnsubscribers.push(
+              onSnapshot(collection(db, 'users'), (snapshot) => {
+                const users = snapshot.docs.map(doc => convertTimestamps({ id: doc.id, ...doc.data() })) as SystemUser[];
+                set({ users });
+              })
+            );
+          } else {
+            // Non-admins only need their own user object
+            set({ users: [userData] });
+          }
+
           set({ isLoading: false });
-          // This part of returning unsubscribers from init is complex, let's simplify.
-          // The main auth unsubscribe is what we return. Sub-collection listeners live with the session.
         } else {
           // User exists in Auth but not in Firestore DB. Log them out.
           await signOut(auth);
           set({ currentUser: null, isLoading: false });
         }
       } else {
-        // No user
-        set({ currentUser: null, isLoading: false });
+        // No user is signed in, clear all state
+        set({ currentUser: null, isLoading: false, equipments: [], officers: [], loans: [], users: [] });
       }
       set({ authInitialized: true });
     });
-    return unsubscribe;
+
+    // This is returned to be called on app cleanup
+    return () => {
+      authUnsubscribe();
+      collectionUnsubscribers.forEach(unsub => unsub());
+    };
   },
 
-  login: async ({ username, password }) => {
+  login: async ({ email, password }) => {
     if (!auth || !db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
 
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('username', '==', username));
-    const querySnapshot = await getDocs(q);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
 
-    if (querySnapshot.empty) {
-      throw new Error("Usuário não encontrado.");
+      // After successful auth, check if user is in our Firestore 'users' collection and is active
+      const userDocRef = doc(db, 'users', firebaseUser.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (!userDocSnap.exists()) {
+        await signOut(auth);
+        throw new Error("Dados de usuário não encontrados no sistema.");
+      }
+
+      const userData = userDocSnap.data() as SystemUser;
+      if (!userData.isActive) {
+        await signOut(auth);
+        throw new Error("Esta conta de usuário está inativa.");
+      }
+      // Login is successful, onAuthStateChanged in init() will handle setting the full user state.
+    } catch (error: any) {
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            throw new Error("Email ou senha inválidos.");
+        }
+        throw error; // Re-throw other errors
     }
-
-    const userDoc = querySnapshot.docs[0];
-    const userData = userDoc.data() as SystemUser;
-
-    if (!userData.isActive) {
-        throw new Error("Usuário inativo.");
-    }
-    
-    if (!password) {
-      throw new Error("Senha é obrigatória.");
-    }
-
-    await signInWithEmailAndPassword(auth, userData.email, password);
-    // onAuthStateChanged in init() will handle setting the user state
   },
 
   logout: async () => {
     if (auth) {
       await signOut(auth);
     }
+    // The onAuthStateChanged listener in init() will handle clearing the state.
     set({ currentUser: null, equipments: [], officers: [], loans: [], users: [] });
   },
 
   addUser: async (userData) => {
     if (!auth || !db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
-
     if (!userData.password) throw new Error("Senha é obrigatória para criar usuário.");
     
-    // Check for unique username
+    // Check for unique username and email before creating in Auth
     const usernameQuery = query(collection(db, 'users'), where('username', '==', userData.username));
     const usernameSnap = await getDocs(usernameQuery);
     if (!usernameSnap.empty) throw new Error("Nome de usuário já existe.");
 
-    // Create user in Firebase Auth
+    const emailQuery = query(collection(db, 'users'), where('email', '==', userData.email));
+    const emailSnap = await getDocs(emailQuery);
+    if (!emailSnap.empty) throw new Error("Este email já está em uso.");
+
     const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
     const firebaseUser = userCredential.user;
 
-    // Create user document in Firestore using the UID as the document ID
     const userDocRef = doc(db, 'users', firebaseUser.uid);
-    const { password, ...userDataForFirestore } = userData; // Don't store password in Firestore
+    const { password, ...userDataForFirestore } = userData;
     
-    // Correctly use setDoc to create the document with the specific UID
     await setDoc(userDocRef, {
         ...userDataForFirestore,
         createdAt: serverTimestamp(),
@@ -194,11 +226,9 @@ export const useStore = create<AppState>((set, get) => ({
 
   updateUser: async (userData) => {
     if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
-
     const { id, ...dataToUpdate } = userData;
     if (!id) throw new Error("ID do usuário é necessário para atualização.");
     const userDocRef = doc(db, 'users', id);
-    // Do not update password here
     delete dataToUpdate.password;
     await updateDoc(userDocRef, { ...dataToUpdate, updatedAt: serverTimestamp() });
   },
@@ -261,8 +291,6 @@ export const useStore = create<AppState>((set, get) => ({
     if (!currentUser) throw new Error("Usuário não autenticado para registrar cautela.");
 
     const batch = writeBatch(db);
-
-    // Add the new loan
     const newLoanRef = doc(collection(db, 'loans'));
     batch.set(newLoanRef, {
       ...loanData,
@@ -272,7 +300,6 @@ export const useStore = create<AppState>((set, get) => ({
       updatedAt: serverTimestamp(),
     });
 
-    // Update equipment statuses
     loanData.equipmentIds.forEach(eqId => {
       const equipDocRef = doc(db, 'equipments', eqId);
       batch.update(equipDocRef, { status: 'Em Cautela', updatedAt: serverTimestamp() });
@@ -289,7 +316,6 @@ export const useStore = create<AppState>((set, get) => ({
     const batch = writeBatch(db);
     const loanRef = doc(db, 'loans', loanId);
     
-    // Update loan document
     batch.update(loanRef, {
       status: status,
       actualReturnDate: returnDate || new Date().toISOString().split('T')[0],
@@ -299,7 +325,6 @@ export const useStore = create<AppState>((set, get) => ({
       updatedAt: serverTimestamp(),
     });
 
-    // Update equipment statuses
     if (equipmentIdsToReturn) {
         equipmentIdsToReturn.forEach(eqId => {
             const equipDocRef = doc(db, 'equipments', eqId);

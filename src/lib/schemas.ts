@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { EquipmentType, UserRole } from './types';
 
 export const LoginSchema = z.object({
-  username: z.string().min(1, "Nome de usuário é obrigatório."),
+  email: z.string().email({ message: "Por favor, insira um email válido." }),
   password: z.string().min(1, "Senha é obrigatória."),
 });
 
