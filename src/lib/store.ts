@@ -21,6 +21,7 @@ import {
   where,
   Timestamp,
   serverTimestamp,
+  setDoc,
 } from 'firebase/firestore';
 import type { Equipment, SystemUser, PoliceOfficer, Loan } from './types';
 import { LoanStatus } from './types';
@@ -179,12 +180,13 @@ export const useStore = create<AppState>((set, get) => ({
     const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
     const firebaseUser = userCredential.user;
 
-    // Create user document in Firestore
+    // Create user document in Firestore using the UID as the document ID
     const userDocRef = doc(db, 'users', firebaseUser.uid);
     const { password, ...userDataForFirestore } = userData; // Don't store password in Firestore
-    await addDoc(collection(db, 'users'), {
+    
+    // Correctly use setDoc to create the document with the specific UID
+    await setDoc(userDocRef, {
         ...userDataForFirestore,
-        id: firebaseUser.uid, // ensure doc id matches auth uid
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
     });
