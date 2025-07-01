@@ -10,11 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { LoanForm } from './components/loan-form';
 import { useStore } from '@/lib/store';
 import { Loan, LoanStatus, PoliceOfficer, Equipment } from '@/lib/types';
-import { ClipboardList, PlusCircle, ArrowLeftFromLine, PackageSearch, User, CalendarDays, Clock, Mail } from 'lucide-react';
+import { ClipboardList, PlusCircle, ArrowLeftFromLine, PackageSearch, User, CalendarDays, Clock, Mail, Check, ChevronsUpDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { LoanSchema } from '@/lib/schemas';
 import type { z } from 'zod';
-import { format, parseISO } from 'date-fns';
+import { format, parse, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   AlertDialog,
@@ -28,10 +28,14 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+
 
 const ContactDisplay = ({ contactValue }: { contactValue: string }) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  // Heuristic regex to identify strings that might be phone numbers
   const phoneIndicatorRegex = /(\d{2,}\)?\s?\d{4,}-?\d{4,})/;
 
   if (emailRegex.test(contactValue)) {
@@ -42,12 +46,11 @@ const ContactDisplay = ({ contactValue }: { contactValue: string }) => {
     );
   }
 
-  const cleanedPhone = contactValue.replace(/\D/g, ''); // Remove all non-digits
+  const cleanedPhone = contactValue.replace(/\D/g, ''); 
   const isLikelyPhone = phoneIndicatorRegex.test(contactValue) && cleanedPhone.length >= 8;
 
   if (isLikelyPhone) {
     let whatsappNumber = cleanedPhone;
-    // Add '55' for Brazilian numbers if it's a common length (10 or 11 digits) and doesn't start with '55'
     if ((whatsappNumber.length === 10 || whatsappNumber.length === 11) && !whatsappNumber.startsWith('55')) {
       whatsappNumber = '55' + whatsappNumber;
     }
@@ -75,13 +78,12 @@ export default function CautelasPage() {
 
   const [displayedLoans, setDisplayedLoans] = React.useState<Loan[]>([]);
   const [isLoanDialogOpen, setIsLoanDialogOpen] = React.useState(false);
-  // For return dialog
   const [isReturnDialogOpen, setIsReturnDialogOpen] = React.useState(false);
   const [selectedLoanForReturn, setSelectedLoanForReturn] = React.useState<Loan | null>(null);
   const [returnObservation, setReturnObservation] = React.useState('');
-
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-
+  const [equipmentIdsForCurrentReturn, setEquipmentIdsForCurrentReturn] = React.useState<string[]>([]);
+  
   const availableEquipments = equipments.filter(eq => eq.status === 'Disponível');
   const statusFilter = searchParams.get('status');
 
@@ -90,14 +92,17 @@ export default function CautelasPage() {
     if (statusFilter === LoanStatus.ENTREGUE) {
       filtered = filtered.filter(loan => loan.status === LoanStatus.ENTREGUE);
     }
-    // Sort loans by loanDate and loanTime in descending order (newest first)
-    setDisplayedLoans(filtered.sort((a, b) => new Date(b.loanDate + "T" + b.loanTime).getTime() - new Date(a.loanDate + "T" + a.loanTime).getTime()));
+    setDisplayedLoans(filtered.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+        return dateB.getTime() - dateA.getTime();
+    }));
   }, [loans, statusFilter]);
 
   const handleLoanFormSubmit = async (values: z.infer<typeof LoanSchema>) => {
     setIsSubmitting(true);
     try {
-      addLoan(values);
+      await addLoan(values);
       toast({ title: "Cautela Registrada", description: `Nova cautela registrada com sucesso.` });
       setIsLoanDialogOpen(false);
     } catch (error: any) {
@@ -110,15 +115,37 @@ export default function CautelasPage() {
   const handleOpenReturnDialog = (loan: Loan) => {
     setSelectedLoanForReturn(loan);
     setReturnObservation('');
+    const loanEquipments = equipments.filter(e => loan.equipmentIds.includes(e.id));
+    setEquipmentIdsForCurrentReturn(loanEquipments.map(e => e.id));
     setIsReturnDialogOpen(true);
   };
 
-  const handleConfirmReturn = () => {
+  const handleConfirmReturn = async () => {
     if (selectedLoanForReturn && currentUser) {
-      updateLoanStatus(selectedLoanForReturn.id, LoanStatus.DEVOLVIDO, undefined, undefined, returnObservation, currentUser.id);
-      toast({ title: "Equipamento Devolvido", description: "Status da cautela atualizado para Devolvido." });
-      setIsReturnDialogOpen(false);
-      setSelectedLoanForReturn(null);
+      setIsSubmitting(true);
+      try {
+        await updateLoanStatus(selectedLoanForReturn.id, LoanStatus.DEVOLVIDO, equipmentIdsForCurrentReturn, undefined, undefined, returnObservation, currentUser.id);
+        toast({ title: "Equipamento Devolvido", description: "Status da cautela atualizado para Devolvido." });
+        setIsReturnDialogOpen(false);
+        setSelectedLoanForReturn(null);
+        setEquipmentIdsForCurrentReturn([]);
+      } catch (error: any) {
+        toast({ title: "Erro ao Devolver", description: error.message, variant: "destructive" });
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+  
+  const getLoanEquipments = (loan: Loan) => {
+    return loan.equipmentIds.map(id => equipments.find(e => e.id === id)).filter(Boolean) as Equipment[];
+  }
+  
+  const handleSelectAllForReturn = (checked: boolean) => {
+    if (checked && selectedLoanForReturn) {
+      setEquipmentIdsForCurrentReturn(getLoanEquipments(selectedLoanForReturn).map(e => e.id));
+    } else {
+      setEquipmentIdsForCurrentReturn([]);
     }
   };
 
@@ -173,6 +200,7 @@ export default function CautelasPage() {
         <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
           {displayedLoans.map((loan) => {
             const officer = officers.find(o => o.id === loan.officerId);
+            const loanEquipments = getLoanEquipments(loan);
             return (
             <Card key={loan.id} className="flex flex-col">
               <CardHeader>
@@ -203,13 +231,13 @@ export default function CautelasPage() {
                 )}
                  <CardDescription className="flex items-center text-sm mt-1">
                   <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" /> 
-                  {format(parseISO(loan.loanDate), "dd/MM/yyyy", { locale: ptBR })} às {loan.loanTime}
+                  {format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR })} às {loan.loanTime}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow space-y-2">
                 <h4 className="font-medium text-sm text-foreground">Equipamentos:</h4>
                 <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                  {loan.equipment.map(eq => (
+                  {loanEquipments.map(eq => (
                     <li key={eq.id}>{eq.brand} ({eq.serialNumber})</li>
                   ))}
                 </ul>
@@ -223,7 +251,7 @@ export default function CautelasPage() {
                    <>
                     <CardDescription className="flex items-center text-sm pt-2">
                       <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" /> 
-                      Devolvido em: {format(parseISO(loan.actualReturnDate), "dd/MM/yyyy", { locale: ptBR })} às {loan.actualReturnTime}
+                      Devolvido em: {format(parse(loan.actualReturnDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR })} às {loan.actualReturnTime}
                     </CardDescription>
                     {loan.returnObservation && (
                        <div>
@@ -248,15 +276,46 @@ export default function CautelasPage() {
           )})}
         </div>
       )}
-      {/* Return Confirmation Dialog */}
+      
       <AlertDialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Devolução</AlertDialogTitle>
             <AlertDialogDescription>
-              Você está prestes a registrar a devolução dos equipamentos para a cautela do policial {selectedLoanForReturn && officers.find(o => o.id === selectedLoanForReturn.officerId)?.name}.
+              Selecione os equipamentos que estão sendo devolvidos para a cautela do policial {selectedLoanForReturn && officers.find(o => o.id === selectedLoanForReturn.officerId)?.name}.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          
+          {selectedLoanForReturn && getLoanEquipments(selectedLoanForReturn).length > 1 && (
+            <div className="space-y-2 py-2">
+                <Label>Equipamentos a Devolver</Label>
+                 <ScrollArea className="h-40 w-full rounded-md border p-2">
+                    <div className="flex items-center space-x-2 pb-2 border-b mb-2">
+                        <Checkbox
+                            id="select-all-return"
+                            checked={equipmentIdsForCurrentReturn.length === getLoanEquipments(selectedLoanForReturn).length}
+                            onCheckedChange={handleSelectAllForReturn}
+                        />
+                        <Label htmlFor="select-all-return" className="font-medium">Selecionar Todos</Label>
+                    </div>
+                    {getLoanEquipments(selectedLoanForReturn).map((equipment) => (
+                        <div key={equipment.id} className="flex items-center space-x-2 py-1">
+                            <Checkbox
+                                id={`return-${equipment.id}`}
+                                checked={equipmentIdsForCurrentReturn.includes(equipment.id)}
+                                onCheckedChange={(checked) => {
+                                    setEquipmentIdsForCurrentReturn(currentIds => 
+                                        checked ? [...currentIds, equipment.id] : currentIds.filter(id => id !== equipment.id)
+                                    )
+                                }}
+                            />
+                            <Label htmlFor={`return-${equipment.id}`} className="font-normal">{equipment.brand} ({equipment.serialNumber})</Label>
+                        </div>
+                    ))}
+                 </ScrollArea>
+            </div>
+          )}
+
           <div className="space-y-2 py-2">
             <Label htmlFor="returnObservation">Observações da Devolução (Opcional)</Label>
             <Textarea
@@ -268,11 +327,12 @@ export default function CautelasPage() {
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setSelectedLoanForReturn(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmReturn} className="bg-green-600 hover:bg-green-700">Confirmar Devolução</AlertDialogAction>
+            <AlertDialogAction onClick={handleConfirmReturn} disabled={isSubmitting || equipmentIdsForCurrentReturn.length === 0} className="bg-green-600 hover:bg-green-700">
+                {isSubmitting ? 'Devolvendo...' : 'Confirmar Devolução'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
   );
 }
-

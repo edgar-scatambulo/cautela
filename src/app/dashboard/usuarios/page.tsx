@@ -6,21 +6,11 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription as ShadDialogDescription } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { UserForm } from './components/user-form';
 import { useStore } from '@/lib/store';
 import type { SystemUser } from '@/lib/types';
 import { UserRole } from '@/lib/types';
-import { UserCog, UserPlus, Edit3, Trash2, ShieldAlert, UserCircle, Mail, KeyRound, CheckCircle, XCircle } from 'lucide-react';
+import { UserCog, UserPlus, Edit3, ShieldAlert, UserCircle, Mail, KeyRound, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SystemUserSchema } from '@/lib/schemas';
 import type { z } from 'zod';
@@ -28,13 +18,11 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function UsuariosPage() {
-  const { users, addUser, updateUser, deleteUser, currentUser } = useStore();
+  const { users, addUser, updateUser, currentUser } = useStore();
   const { toast } = useToast();
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingUser, setEditingUser] = React.useState<SystemUser | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
-  const [userToDelete, setUserToDelete] = React.useState<SystemUser | null>(null);
 
   if (currentUser?.role !== UserRole.ADMIN) {
     return (
@@ -51,17 +39,10 @@ export default function UsuariosPage() {
     try {
       if (editingUser) {
         const updateValues = {...values};
-        // If password is not provided for editing, it should be undefined
-        // The form component already handles sending undefined if password field is empty for edit
-        updateUser({ ...editingUser, ...updateValues });
+        await updateUser({ ...editingUser, ...updateValues });
         toast({ title: "Usuário Atualizado", description: `Os dados de ${values.name} foram atualizados.` });
       } else {
-        if (!values.password) { // Should be caught by schema, but as a safeguard
-            toast({ title: "Erro", description: "Senha é obrigatória para novos usuários.", variant: "destructive" });
-            setIsSubmitting(false);
-            return;
-        }
-        addUser(values as Omit<SystemUser, 'id' | 'createdAt' | 'updatedAt'>);
+        await addUser(values as Omit<SystemUser, 'id' | 'createdAt' | 'updatedAt'>);
         toast({ title: "Usuário Adicionado", description: `${values.name} foi adicionado ao sistema.` });
       }
       setIsFormDialogOpen(false);
@@ -81,25 +62,6 @@ export default function UsuariosPage() {
   const openEditDialog = (user: SystemUser) => {
     setEditingUser(user);
     setIsFormDialogOpen(true);
-  };
-
-  const openDeleteDialog = (user: SystemUser) => {
-    setUserToDelete(user);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = () => {
-    if (userToDelete) {
-      try {
-        deleteUser(userToDelete.id);
-        toast({ title: "Usuário Excluído", description: `O usuário ${userToDelete.name} foi excluído.` });
-      } catch (error: any) {
-         toast({ title: "Erro ao Excluir", description: error.message, variant: "destructive" });
-      } finally {
-        setIsDeleteDialogOpen(false);
-        setUserToDelete(null);
-      }
-    }
   };
   
   return (
@@ -182,13 +144,13 @@ export default function UsuariosPage() {
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="destructive" size="icon" onClick={() => openDeleteDialog(user)} disabled={currentUser?.id === user.id}>
+                      <Button variant="destructive" size="icon" disabled={true}>
                         <Trash2 className="h-4 w-4" />
                         <span className="sr-only">Excluir</span>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Excluir</p>
+                      <p>Exclusão desabilitada</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -197,22 +159,6 @@ export default function UsuariosPage() {
           ))}
         </div>
       )}
-
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir o usuário <span className="font-semibold">{userToDelete?.name} ({userToDelete?.username})</span>? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setUserToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </TooltipProvider>
   );
 }
-

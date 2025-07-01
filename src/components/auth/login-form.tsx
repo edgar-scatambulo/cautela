@@ -24,7 +24,7 @@ import { LogIn } from "lucide-react";
 export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
-  const { login, users } = useStore();
+  const { login } = useStore();
 
   const form = useForm<z.infer<typeof LoginSchema>>({
     resolver: zodResolver(LoginSchema),
@@ -34,22 +34,18 @@ export function LoginForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof LoginSchema>) {
-    const foundUser = users.find(
-      (u) => u.username === values.username && u.password === values.password && u.isActive
-    );
-
-    if (foundUser) {
-      login(foundUser);
+  async function onSubmit(values: z.infer<typeof LoginSchema>) {
+    try {
+      await login(values);
       toast({
         title: "Login bem-sucedido!",
-        description: `Bem-vindo, ${foundUser.name}.`,
+        description: `Login efetuado com sucesso.`,
       });
       router.push("/dashboard");
-    } else {
-      toast({
+    } catch (error: any) {
+       toast({
         title: "Erro de Login",
-        description: "Nome de usuário, senha inválidos ou usuário inativo.",
+        description: error.message || "Nome de usuário ou senha inválidos.",
         variant: "destructive",
       });
     }

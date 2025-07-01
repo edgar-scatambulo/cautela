@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -22,7 +23,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { navLinks, NavLink as NavLinkType } from '@/components/layout/nav-links';
 import { UserProfileDropdown } from '@/components/layout/user-profile-dropdown';
 import { useStore } from '@/lib/store';
-import { useEffect } from 'react';
 import { ShieldCheck } from 'lucide-react';
 
 function AppLogo() {
@@ -75,35 +75,37 @@ function SidebarNav() {
   );
 }
 
+function LoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center h-screen bg-background">
+      <div className="flex flex-col items-center">
+        <svg className="animate-spin h-10 w-10 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p className="mt-4 text-muted-foreground">Carregando...</p>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, currentUser } = useStore();
+  const { currentUser, authInitialized, isLoading, init } = useStore();
   const router = useRouter();
-  const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
-    setMounted(true);
-  }, []);
+    const unsubscribe = init();
+    return () => unsubscribe(); // Cleanup listener on unmount
+  }, [init]);
 
-
-  useEffect(() => {
-    if (mounted && !isAuthenticated) {
+  React.useEffect(() => {
+    if (authInitialized && !currentUser) {
       router.replace('/login');
     }
-  }, [isAuthenticated, router, mounted]);
+  }, [authInitialized, currentUser, router]);
   
-  if (!mounted || !isAuthenticated) {
-     return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <div className="flex flex-col items-center">
-          <svg className="animate-spin h-10 w-10 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <p className="mt-4 text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
-    );
+  if (!authInitialized || isLoading || !currentUser) {
+     return <LoadingSpinner />;
   }
 
   return (
@@ -118,16 +120,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <SidebarNav />
             </ScrollArea>
           </SidebarContent>
-          {/* <SidebarFooter className="p-4 border-t border-sidebar-border">
-             Optional: User profile / settings quick access in footer
-          </SidebarFooter> */}
         </Sidebar>
         <SidebarInset className="flex-1 flex flex-col bg-background">
           <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-card px-6 shadow-sm print:hidden">
             <div className="flex items-center">
               <SidebarTrigger className="md:hidden mr-4" /> {/* Mobile trigger */}
               <h1 className="text-xl font-semibold font-headline text-foreground">
-                {/* Dynamically set page title here or keep it general */}
                 Painel Cautela Digital
               </h1>
             </div>

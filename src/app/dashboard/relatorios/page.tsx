@@ -4,7 +4,7 @@
 import React from 'react';
 import { PageHeader } from '@/components/page-header';
 import { useStore } from '@/lib/store';
-import { Loan, PoliceOfficer, LoanStatus } from '@/lib/types';
+import { Loan, PoliceOfficer, LoanStatus, Equipment } from '@/lib/types';
 import { ReportFilters } from './components/report-filters';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { FileText, User, CalendarDays, Info, Printer } from 'lucide-react';
@@ -19,11 +19,11 @@ const getOfficerName = (officerId: string, officers: PoliceOfficer[]): string =>
 };
 
 export default function RelatoriosPage() {
-  const { loans, officers } = useStore();
+  const { loans, officers, equipments } = useStore();
   const [filteredLoans, setFilteredLoans] = React.useState<Loan[]>([]);
 
   React.useEffect(() => {
-    setFilteredLoans([...loans].sort((a, b) => new Date(b.loanDate + "T" + b.loanTime).getTime() - new Date(a.loanDate + "T" + a.loanTime).getTime()));
+    setFilteredLoans([...loans].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
   }, [loans]);
 
   const handleFilterChange = (filters: { dateRange?: DateRange; officerId?: string; status?: string; patrimony?: string }) => {
@@ -31,12 +31,11 @@ export default function RelatoriosPage() {
 
     if (filters.dateRange?.from) {
       const fromDate = filters.dateRange.from;
-      const toDate = filters.dateRange.to || filters.dateRange.from; // Consider single day selection
+      const toDate = filters.dateRange.to || filters.dateRange.from;
 
       tempLoans = tempLoans.filter(loan => {
         const loanDateObj = parse(loan.loanDate, 'yyyy-MM-dd', new Date());
         if (!isValid(loanDateObj)) return false;
-        // Adjust toDate to include the whole day
         const adjustedToDate = new Date(toDate);
         adjustedToDate.setHours(23, 59, 59, 999);
         return isWithinInterval(loanDateObj, { start: fromDate, end: adjustedToDate });
@@ -53,19 +52,22 @@ export default function RelatoriosPage() {
 
     if (filters.patrimony) {
       const searchTerm = filters.patrimony.toLowerCase();
-      tempLoans = tempLoans.filter(loan =>
-        loan.equipment.some(eq =>
-          eq.serialNumber.toLowerCase().includes(searchTerm)
-        )
-      );
+      tempLoans = tempLoans.filter(loan => {
+        const loanEquipments = loan.equipmentIds.map(id => equipments.find(e => e.id === id)).filter(Boolean) as Equipment[];
+        return loanEquipments.some(eq => eq.serialNumber.toLowerCase().includes(searchTerm));
+      });
     }
     
-    setFilteredLoans(tempLoans.sort((a, b) => new Date(b.loanDate + "T" + b.loanTime).getTime() - new Date(a.loanDate + "T" + a.loanTime).getTime()));
+    setFilteredLoans(tempLoans.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
   };
 
   const handlePrint = () => {
     window.print();
   };
+
+  const getLoanEquipments = (loan: Loan) => {
+    return loan.equipmentIds.map(id => equipments.find(e => e.id === id)).filter(Boolean) as Equipment[];
+  }
 
   const pageHeaderActions = (
     <Button onClick={handlePrint} variant="outline" className="print:hidden">
@@ -99,9 +101,10 @@ export default function RelatoriosPage() {
         </div>
       ) : (
         <div className="space-y-6 print:space-y-0 print-columns-container">
-          {filteredLoans.map((loan) => (
+          {filteredLoans.map((loan) => {
+            const loanEquipments = getLoanEquipments(loan);
+            return (
             <div key={loan.id} className="loan-print-item">
-              {/* Screen rendering */}
               <Card className="print:hidden">
                 <CardHeader className="print:p-1 print:pb-0">
                   <div className="flex items-start justify-between mb-1 print:mb-0.5">
@@ -132,7 +135,7 @@ export default function RelatoriosPage() {
                 <CardContent className="print:p-1 print:pt-0.5">
                   <h4 className="font-medium text-sm text-foreground mb-1 print:text-xs print:font-semibold print:mb-0.5">Equipamentos:</h4>
                   <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 print:text-xs print:list-none print:pl-0 print:space-y-0">
-                    {loan.equipment.map(eq => (
+                    {loanEquipments.map(eq => (
                       <li key={eq.id} className="print:mb-px">{eq.brand} ({eq.serialNumber})</li>
                     ))}
                   </ul>
@@ -151,7 +154,6 @@ export default function RelatoriosPage() {
                 </CardContent>
               </Card>
 
-              {/* Print rendering */}
               <div className="hidden print:block">
                 <div className="print-status-line">
                   <p><span className="print-label">Status:</span></p>
@@ -168,7 +170,7 @@ export default function RelatoriosPage() {
               
                 <p className="print-label mt-1.5">Equipamentos:</p>
                 <ul className="print-equipment-list">
-                  {loan.equipment.map(eq => (
+                  {loanEquipments.map(eq => (
                     <li key={eq.id} className="print-value">{eq.brand} ({eq.serialNumber})</li>
                   ))}
                 </ul>
@@ -185,7 +187,7 @@ export default function RelatoriosPage() {
                 )}
               </div>
             </div>
-          ))}
+          )})}
         </div>
       )}
     </>

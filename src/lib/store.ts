@@ -1,304 +1,290 @@
-
-import * as React from 'react';
 import { create } from 'zustand';
-import { immer } from 'zustand/middleware/immer';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { auth, db } from './firebase';
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  type User as FirebaseUser,
+} from 'firebase/auth';
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDoc,
+  getDocs,
+  onSnapshot,
+  writeBatch,
+  query,
+  where,
+  Timestamp,
+  serverTimestamp,
+} from 'firebase/firestore';
 import type { Equipment, SystemUser, PoliceOfficer, Loan } from './types';
-import { UserRole, EquipmentType, LoanStatus } from './types';
-import { v4 as uuidv4 } from 'uuid';
+import { LoanStatus } from './types';
+
+// Helper to convert Firestore Timestamps to ISO strings
+const convertTimestamps = (docData: any) => {
+  const data = { ...docData };
+  for (const key in data) {
+    if (data[key] instanceof Timestamp) {
+      data[key] = data[key].toDate().toISOString();
+    }
+  }
+  return data;
+};
 
 interface AppState {
-  isAuthenticated: boolean;
+  // State
+  authInitialized: boolean;
+  isLoading: boolean;
   currentUser: SystemUser | null;
   equipments: Equipment[];
   users: SystemUser[];
   officers: PoliceOfficer[];
   loans: Loan[];
 
-  login: (user: SystemUser) => void;
-  logout: () => void;
+  // Auth Actions
+  init: () => () => void; // Returns the unsubscribe function
+  login: (credentials: Pick<SystemUser, 'username' | 'password'>) => Promise<void>;
+  logout: () => Promise<void>;
+  
+  // User Actions
+  addUser: (userData: Omit<SystemUser, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateUser: (userData: Partial<SystemUser> & { id: string }) => Promise<void>;
+  // deleteUser is not supported on client-side for other users
 
-  addEquipment: (equipment: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => Equipment;
-  updateEquipment: (equipment: Equipment) => void;
-  deleteEquipment: (equipmentId: string) => void;
+  // Equipment Actions
+  addEquipment: (equipmentData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateEquipment: (equipment: Equipment) => Promise<void>;
+  deleteEquipment: (equipmentId: string) => Promise<void>;
 
-  addOfficer: (officer: Omit<PoliceOfficer, 'id' | 'createdAt' | 'updatedAt'>) => PoliceOfficer;
-  updateOfficer: (officer: PoliceOfficer) => void;
-  deleteOfficer: (officerId: string) => void;
-
-  addLoan: (loan: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'loanedByUserId' | 'equipment'> & { equipmentIds: string[] }) => Loan;
-  updateLoanStatus: (loanId: string, status: LoanStatus, equipmentIdsToReturn?: string[], returnDate?: string, returnTime?: string, returnObservation?: string, returnedToUserId?: string) => void;
-
-
-  addUser: (userData: Omit<SystemUser, 'id' | 'createdAt' | 'updatedAt'>) => SystemUser;
-  updateUser: (userData: Partial<SystemUser> & { id: string }) => void;
-  deleteUser: (userId: string) => void;
+  // Officer Actions
+  addOfficer: (officerData: Omit<PoliceOfficer, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateOfficer: (officer: PoliceOfficer) => Promise<void>;
+  deleteOfficer: (officerId: string) => Promise<void>;
+  
+  // Loan Actions
+  addLoan: (loanData: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'loanedByUserId' >) => Promise<void>;
+  updateLoanStatus: (loanId: string, status: LoanStatus, equipmentIdsToReturn?: string[], returnDate?: string, returnTime?: string, returnObservation?: string, returnedToUserId?: string) => Promise<void>;
 }
 
-// Usar IDs fixos para dados iniciais para consistência se eles forem usados em testes ou como referência
-const initialAdminUserId = '00000000-0000-0000-0000-000000000001';
-const initialEquipmentId1 = 'eq-00000000-0000-0000-0000-000000000001';
-const initialEquipmentId2 = 'eq-00000000-0000-0000-0000-000000000002';
-const initialEquipmentId3 = 'eq-00000000-0000-0000-0000-000000000003';
-const initialOfficerId1 = 'off-00000000-0000-0000-0000-000000000001';
-const initialOfficerId2 = 'off-00000000-0000-0000-0000-000000000002';
+export const useStore = create<AppState>((set, get) => ({
+  authInitialized: false,
+  isLoading: true,
+  currentUser: null,
+  equipments: [],
+  users: [],
+  officers: [],
+  loans: [],
 
-const initialAdminUser: SystemUser = {
-  id: initialAdminUserId,
-  name: 'Admin User',
-  email: 'admin@cautela.com',
-  username: 'admin',
-  password: 'tricolor',
-  role: UserRole.ADMIN,
-  isActive: true,
-  createdAt: new Date(0).toISOString(),
-  updatedAt: new Date(0).toISOString(),
-};
+  init: () => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          const userData = convertTimestamps({ id: userDocSnap.id, ...userDocSnap.data() }) as SystemUser;
+          set({ currentUser: userData, isLoading: true });
 
-
-export const useStore = create<AppState>()(
-  persist(
-    immer((set, get) => ({
-      isAuthenticated: false,
-      currentUser: null,
-      equipments: [
-        { id: initialEquipmentId1, type: EquipmentType.CELULAR, brand: 'Samsung Galaxy S21', serialNumber: 'SN12345A', status: 'Disponível', createdAt: new Date(0).toISOString(), updatedAt: new Date(0).toISOString() },
-        { id: initialEquipmentId2, type: EquipmentType.IMPRESSORA, brand: 'HP LaserJet Pro', serialNumber: 'SN67890B', status: 'Disponível', createdAt: new Date(0).toISOString(), updatedAt: new Date(0).toISOString() },
-        { id: initialEquipmentId3, type: EquipmentType.RADIO, brand: 'Motorola APX 6000', serialNumber: 'SN54321C', status: 'Em Cautela', createdAt: new Date(0).toISOString(), updatedAt: new Date(0).toISOString() },
-      ],
-      users: [initialAdminUser],
-      officers: [
-        { id: initialOfficerId1, name: 'SGT Silva', fullName: 'Fulano Silva de Tal', functionalId: 'silva@email.com', rank: 'Sargento', unit: '1º BPM', createdAt: new Date(0).toISOString(), updatedAt: new Date(0).toISOString() },
-        { id: initialOfficerId2, name: 'CB Costa', fullName: 'Beltrano Costa Oliveira', functionalId: '(11) 98765-4321', rank: 'Cabo', unit: 'ROTAM', createdAt: new Date(0).toISOString(), updatedAt: new Date(0).toISOString() },
-      ],
-      loans: [],
-
-      login: (user) => set((state) => {
-        state.isAuthenticated = true;
-        state.currentUser = user;
-      }),
-      logout: () => set((state) => {
-        state.isAuthenticated = false;
-        state.currentUser = null;
-      }),
-
-      addEquipment: (equipmentData) => {
-        const newEquipment: Equipment = {
-          ...equipmentData,
-          id: uuidv4(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        set((state) => {
-          state.equipments.push(newEquipment);
-        });
-        return newEquipment;
-      },
-      updateEquipment: (updatedEquipment) => {
-        set((state) => {
-          const index = state.equipments.findIndex(e => e.id === updatedEquipment.id);
-          if (index !== -1) {
-            state.equipments[index] = { ...state.equipments[index], ...updatedEquipment, updatedAt: new Date().toISOString() };
-          }
-        });
-      },
-      deleteEquipment: (equipmentId) => {
-        set((state) => {
-          const isActiveLoan = state.loans.some(loan =>
-            loan.equipment.some(eq => eq.id === equipmentId) && loan.status === LoanStatus.ENTREGUE
-          );
-          if (isActiveLoan) {
-            throw new Error("Equipamento não pode ser excluído pois está em uma cautela ativa.");
-          }
-          state.equipments = state.equipments.filter(e => e.id !== equipmentId);
-        });
-      },
-      addOfficer: (officerData) => {
-         const newOfficer: PoliceOfficer = {
-          ...officerData,
-          id: uuidv4(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        set((state) => {
-          state.officers.push(newOfficer);
-        });
-        return newOfficer;
-      },
-      updateOfficer: (updatedOfficer) => {
-        set((state) => {
-          const index = state.officers.findIndex(o => o.id === updatedOfficer.id);
-          if (index !== -1) {
-            state.officers[index] = { ...state.officers[index], ...updatedOfficer, updatedAt: new Date().toISOString() };
-          }
-        });
-      },
-      deleteOfficer: (officerId) => {
-        set((state) => {
-          const isActiveLoan = state.loans.some(loan =>
-            loan.officerId === officerId && loan.status === LoanStatus.ENTREGUE
-          );
-          if (isActiveLoan) {
-            throw new Error("Policial não pode ser excluído pois está vinculado a uma cautela ativa.");
-          }
-          state.officers = state.officers.filter(o => o.id !== officerId);
-        });
-      },
-      addLoan: (loanData) => {
-        const currentUser = get().currentUser;
-        if (!currentUser) throw new Error("Usuário não autenticado para registrar cautela.");
-
-        const equipmentDetails = loanData.equipmentIds.map(id => {
-          const eq = get().equipments.find(e => e.id === id);
-          if (!eq) throw new Error(`Equipamento com ID ${id} não encontrado.`);
-          if (eq.status !== 'Disponível') throw new Error(`Equipamento ${eq.brand} (Patrimônio: ${eq.serialNumber}) não está disponível.`);
-          return eq;
-        });
-
-        const newLoan: Loan = {
-          id: uuidv4(),
-          officerId: loanData.officerId,
-          equipment: equipmentDetails,
-          loanDate: loanData.loanDate,
-          loanTime: loanData.loanTime,
-          expectedReturnDate: loanData.expectedReturnDate,
-          loanObservation: loanData.loanObservation,
-          status: LoanStatus.ENTREGUE,
-          loanedByUserId: currentUser.id,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        set((state) => {
-          state.loans.push(newLoan);
-          loanData.equipmentIds.forEach(eqId => {
-            const equipmentIndex = state.equipments.findIndex(e => e.id === eqId);
-            if (equipmentIndex !== -1) {
-              state.equipments[equipmentIndex].status = 'Em Cautela';
-              state.equipments[equipmentIndex].updatedAt = new Date().toISOString();
-            }
-          });
-        });
-        return newLoan;
-      },
-      updateLoanStatus: (loanId, status, equipmentIdsToReturn, returnDate, returnTime, returnObservation, returnedToUserId) => {
-        set(state => {
-          const loanIndex = state.loans.findIndex(l => l.id === loanId);
-          if (loanIndex !== -1) {
-            const currentLoan = state.loans[loanIndex];
-            currentLoan.status = status; // Update status to Devolvido
-            currentLoan.updatedAt = new Date().toISOString();
-            currentLoan.actualReturnDate = returnDate || new Date().toISOString().split('T')[0];
-            currentLoan.actualReturnTime = returnTime || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit'});
-            currentLoan.returnObservation = returnObservation;
-            currentLoan.returnedToUserId = returnedToUserId || get().currentUser?.id;
-
-            const idsToUpdate = equipmentIdsToReturn && equipmentIdsToReturn.length > 0 
-              ? equipmentIdsToReturn 
-              : currentLoan.equipment.map(eq => eq.id); // If no specific IDs, assume all are returned
-
-            idsToUpdate.forEach(eqId => {
-              const equipmentIndex = state.equipments.findIndex(e => e.id === eqId);
-              if (equipmentIndex !== -1) {
-                // Only change status if it was part of this loan
-                if (currentLoan.equipment.some(loanEq => loanEq.id === eqId)) {
-                     state.equipments[equipmentIndex].status = 'Disponível';
-                     state.equipments[equipmentIndex].updatedAt = new Date().toISOString();
-                }
-              }
-            });
-
-            // Check if all equipment in the loan have been marked as 'Disponível'
-            // This logic assumes that if any equipment from the loan is returned, the loan status becomes Devolvido.
-            // If partial returns should keep the loan 'Entregue', this logic needs adjustment.
-            // For now, any return action makes the whole loan 'Devolvido'.
-          }
-        });
-      },
-      addUser: (userData) => {
-        if (!userData.password) {
-          throw new Error("Senha é obrigatória para novos usuários.");
+          // Once authenticated, set up real-time listeners for all collections
+          const unsubscribers = [
+            onSnapshot(collection(db, 'equipments'), (snapshot) => {
+              const equipments = snapshot.docs.map(doc => convertTimestamps({ id: doc.id, ...doc.data() })) as Equipment[];
+              set({ equipments });
+            }),
+            onSnapshot(collection(db, 'officers'), (snapshot) => {
+              const officers = snapshot.docs.map(doc => convertTimestamps({ id: doc.id, ...doc.data() })) as PoliceOfficer[];
+              set({ officers });
+            }),
+            onSnapshot(collection(db, 'loans'), (snapshot) => {
+              const loans = snapshot.docs.map(doc => convertTimestamps({ id: doc.id, ...doc.data() })) as Loan[];
+              set({ loans });
+            }),
+             onSnapshot(collection(db, 'users'), (snapshot) => {
+              const users = snapshot.docs.map(doc => convertTimestamps({ id: doc.id, ...doc.data() })) as SystemUser[];
+              set({ users });
+            }),
+          ];
+          set({ isLoading: false });
+          // This part of returning unsubscribers from init is complex, let's simplify.
+          // The main auth unsubscribe is what we return. Sub-collection listeners live with the session.
+        } else {
+          // User exists in Auth but not in Firestore DB. Log them out.
+          await signOut(auth);
+          set({ currentUser: null, isLoading: false });
         }
-        const existingUserByUsername = get().users.find(u => u.username === userData.username);
-        if (existingUserByUsername) {
-          throw new Error(`Nome de usuário "${userData.username}" já existe.`);
-        }
-        const existingUserByEmail = get().users.find(u => u.email === userData.email);
-        if (existingUserByEmail) {
-          throw new Error(`Email "${userData.email}" já está em uso.`);
-        }
+      } else {
+        // No user
+        set({ currentUser: null, isLoading: false });
+      }
+      set({ authInitialized: true });
+    });
+    return unsubscribe;
+  },
 
-        const newUser: SystemUser = {
-          ...userData,
-          id: uuidv4(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        set(state => {
-          state.users.push(newUser);
-        });
-        return newUser;
-      },
-      updateUser: (userData) => {
-        set(state => {
-          const userIndex = state.users.findIndex(u => u.id === userData.id);
-          if (userIndex === -1) {
-            throw new Error("Usuário não encontrado para atualização.");
-          }
+  login: async ({ username, password }) => {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('username', '==', username));
+    const querySnapshot = await getDocs(q);
 
-          if (userData.username && userData.username !== state.users[userIndex].username) {
-            const existingUserByUsername = state.users.find(u => u.username === userData.username && u.id !== userData.id);
-            if (existingUserByUsername) {
-              throw new Error(`Nome de usuário "${userData.username}" já existe.`);
-            }
-          }
-          if (userData.email && userData.email !== state.users[userIndex].email) {
-            const existingUserByEmail = state.users.find(u => u.email === userData.email && u.id !== userData.id);
-            if (existingUserByEmail) {
-              throw new Error(`Email "${userData.email}" já está em uso.`);
-            }
-          }
-
-          const updatedUser = { ...state.users[userIndex], ...userData, updatedAt: new Date().toISOString() };
-
-          if (userData.password === "" || userData.password === undefined) {
-            updatedUser.password = state.users[userIndex].password;
-          }
-
-          state.users[userIndex] = updatedUser;
-        });
-      },
-      deleteUser: (userId) => {
-        set(state => {
-          if (state.currentUser?.id === userId) {
-            throw new Error("Você não pode excluir sua própria conta.");
-          }
-          const userToDelete = state.users.find(u => u.id === userId);
-          if (!userToDelete) {
-            throw new Error("Usuário não encontrado para exclusão.");
-          }
-          // Proteção para não excluir o admin inicial se ele for o único administrador
-          if (userToDelete.id === initialAdminUserId) {
-            const adminCount = state.users.filter(u => u.role === UserRole.ADMIN && u.isActive).length;
-            if (adminCount <= 1) {
-              throw new Error("Não é possível excluir o administrador padrão inicial se ele for o único administrador ativo.");
-            }
-          }
-          state.users = state.users.filter(u => u.id !== userId);
-        });
-      },
-    })),
-    {
-      name: 'cautela-control-storage', // Nome da chave no localStorage
-      storage: createJSONStorage(() => localStorage), // Define o localStorage como meio de persistência
-      partialize: (state) => ({
-        equipments: state.equipments,
-        users: state.users,
-        officers: state.officers,
-        loans: state.loans,
-      }),
+    if (querySnapshot.empty) {
+      throw new Error("Usuário não encontrado.");
     }
-  )
-);
+
+    const userDoc = querySnapshot.docs[0];
+    const userData = userDoc.data() as SystemUser;
+
+    if (!userData.isActive) {
+        throw new Error("Usuário inativo.");
+    }
+    
+    if (!password) {
+      throw new Error("Senha é obrigatória.");
+    }
+
+    await signInWithEmailAndPassword(auth, userData.email, password);
+    // onAuthStateChanged in init() will handle setting the user state
+  },
+
+  logout: async () => {
+    await signOut(auth);
+    set({ currentUser: null, equipments: [], officers: [], loans: [], users: [] });
+  },
+
+  addUser: async (userData) => {
+    if (!userData.password) throw new Error("Senha é obrigatória para criar usuário.");
+    
+    // Check for unique username
+    const usernameQuery = query(collection(db, 'users'), where('username', '==', userData.username));
+    const usernameSnap = await getDocs(usernameQuery);
+    if (!usernameSnap.empty) throw new Error("Nome de usuário já existe.");
+
+    // Create user in Firebase Auth
+    const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
+    const firebaseUser = userCredential.user;
+
+    // Create user document in Firestore
+    const userDocRef = doc(db, 'users', firebaseUser.uid);
+    const { password, ...userDataForFirestore } = userData; // Don't store password in Firestore
+    await addDoc(collection(db, 'users'), {
+        ...userDataForFirestore,
+        id: firebaseUser.uid, // ensure doc id matches auth uid
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+    });
+  },
+
+  updateUser: async (userData) => {
+    const { id, ...dataToUpdate } = userData;
+    if (!id) throw new Error("ID do usuário é necessário para atualização.");
+    const userDocRef = doc(db, 'users', id);
+    // Do not update password here
+    delete dataToUpdate.password;
+    await updateDoc(userDocRef, { ...dataToUpdate, updatedAt: serverTimestamp() });
+  },
+
+  addEquipment: async (equipmentData) => {
+    await addDoc(collection(db, 'equipments'), {
+      ...equipmentData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  },
+
+  updateEquipment: async (equipment) => {
+    const { id, ...dataToUpdate } = equipment;
+    const equipDocRef = doc(db, 'equipments', id);
+    await updateDoc(equipDocRef, { ...dataToUpdate, updatedAt: serverTimestamp() });
+  },
+
+  deleteEquipment: async (equipmentId) => {
+    const loansQuery = query(collection(db, 'loans'), where('equipmentIds', 'array-contains', equipmentId), where('status', '==', 'Entregue'));
+    const loansSnap = await getDocs(loansQuery);
+    if (!loansSnap.empty) {
+      throw new Error("Equipamento não pode ser excluído pois está em uma cautela ativa.");
+    }
+    await deleteDoc(doc(db, 'equipments', equipmentId));
+  },
+
+  addOfficer: async (officerData) => {
+    await addDoc(collection(db, 'officers'), {
+      ...officerData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  },
+
+  updateOfficer: async (officer) => {
+    const { id, ...dataToUpdate } = officer;
+    const officerDocRef = doc(db, 'officers', id);
+    await updateDoc(officerDocRef, { ...dataToUpdate, updatedAt: serverTimestamp() });
+  },
+
+  deleteOfficer: async (officerId) => {
+    const loansQuery = query(collection(db, 'loans'), where('officerId', '==', officerId), where('status', '==', 'Entregue'));
+    const loansSnap = await getDocs(loansQuery);
+    if (!loansSnap.empty) {
+      throw new Error("Policial não pode ser excluído pois está vinculado a uma cautela ativa.");
+    }
+    await deleteDoc(doc(db, 'officers', officerId));
+  },
+
+  addLoan: async (loanData) => {
+    const currentUser = get().currentUser;
+    if (!currentUser) throw new Error("Usuário não autenticado para registrar cautela.");
+
+    const batch = writeBatch(db);
+
+    // Add the new loan
+    const newLoanRef = doc(collection(db, 'loans'));
+    batch.set(newLoanRef, {
+      ...loanData,
+      status: LoanStatus.ENTREGUE,
+      loanedByUserId: currentUser.id,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    // Update equipment statuses
+    loanData.equipmentIds.forEach(eqId => {
+      const equipDocRef = doc(db, 'equipments', eqId);
+      batch.update(equipDocRef, { status: 'Em Cautela', updatedAt: serverTimestamp() });
+    });
+
+    await batch.commit();
+  },
+
+  updateLoanStatus: async (loanId, status, equipmentIdsToReturn, returnDate, returnTime, returnObservation) => {
+    const currentUser = get().currentUser;
+    if (!currentUser) throw new Error("Usuário não autenticado.");
+
+    const batch = writeBatch(db);
+    const loanRef = doc(db, 'loans', loanId);
+    
+    // Update loan document
+    batch.update(loanRef, {
+      status: status,
+      actualReturnDate: returnDate || new Date().toISOString().split('T')[0],
+      actualReturnTime: returnTime || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      returnObservation: returnObservation || '',
+      returnedToUserId: currentUser.id,
+      updatedAt: serverTimestamp(),
+    });
+
+    // Update equipment statuses
+    if (equipmentIdsToReturn) {
+        equipmentIdsToReturn.forEach(eqId => {
+            const equipDocRef = doc(db, 'equipments', eqId);
+            batch.update(equipDocRef, { status: 'Disponível', updatedAt: serverTimestamp() });
+        });
+    }
+
+    await batch.commit();
+  },
+}));
 
 export const AppStateProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   return children;

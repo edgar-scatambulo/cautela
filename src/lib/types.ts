@@ -1,4 +1,3 @@
-
 export enum EquipmentType {
   CELULAR = 'Celular',
   IMPRESSORA = 'Impressora',
@@ -60,7 +59,7 @@ export interface LoanItem {
 export interface Loan {
   id: string;
   officerId: string; // PoliceOfficer ID
-  equipment: Equipment[]; 
+  equipmentIds: string[]; 
   loanDate: string; // ISO Date string for when it was loaned out
   loanTime: string; // HH:MM
   expectedReturnDate?: string; // ISO Date string
@@ -74,4 +73,3 @@ export interface Loan {
   createdAt: string; // ISO Date string
   updatedAt: string; // ISO Date string
 }
-

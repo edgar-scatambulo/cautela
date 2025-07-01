@@ -15,14 +15,15 @@ import { LoanForm } from './cautelas/components/loan-form';
 import { useToast } from '@/hooks/use-toast';
 import { LoanSchema } from '@/lib/schemas';
 import type { z } from 'zod';
-import type { PoliceOfficer } from '@/lib/types';
+import type { PoliceOfficer, Loan, Equipment } from '@/lib/types';
 import { LoanStatus } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { format, parseISO } from 'date-fns';
+import { format, parse, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function DashboardPage() {
   const { currentUser, equipments, officers, loans, addLoan, updateLoanStatus } = useStore();
@@ -32,16 +33,15 @@ export default function DashboardPage() {
   const [totalOfficers, setTotalOfficers] = useState(0);
   const [activeLoansCount, setActiveLoansCount] = useState(0);
 
-  // State for Loan Dialog
   const [isLoanDialogOpen, setIsLoanDialogOpen] = React.useState(false);
   const [isSubmittingLoan, setIsSubmittingLoan] = React.useState(false);
   const availableEquipments = equipments.filter(eq => eq.status === 'Disponível');
 
-  // State for Return Dialog
   const [isReturnDialogOpen, setIsReturnDialogOpen] = React.useState(false);
-  const [selectedLoanForReturnId, setSelectedLoanForReturnId] = React.useState<string | undefined>(undefined);
+  const [selectedLoanForReturn, setSelectedLoanForReturn] = React.useState<Loan | null>(null);
   const [returnObservation, setReturnObservation] = React.useState('');
   const [isSubmittingReturn, setIsSubmittingReturn] = React.useState(false);
+  const [equipmentIdsForCurrentReturn, setEquipmentIdsForCurrentReturn] = React.useState<string[]>([]);
 
   const activeLoansList = loans.filter(loan => loan.status === LoanStatus.ENTREGUE);
 
@@ -55,15 +55,15 @@ export default function DashboardPage() {
     return null; 
   }
   
-  const getOfficerName = (officerId: string, officersList: PoliceOfficer[]): string => {
-    const officer = officersList.find(o => o.id === officerId);
+  const getOfficerName = (officerId: string): string => {
+    const officer = officers.find(o => o.id === officerId);
     return officer ? `${officer.name} (${officer.rank})` : 'Desconhecido';
   };
 
   const handleLoanFormSubmit = async (values: z.infer<typeof LoanSchema>) => {
     setIsSubmittingLoan(true);
     try {
-      addLoan(values);
+      await addLoan(values);
       toast({ title: "Cautela Registrada", description: `Nova cautela registrada com sucesso.` });
       setIsLoanDialogOpen(false);
     } catch (error: any) {
@@ -74,24 +74,47 @@ export default function DashboardPage() {
   };
 
   const handleReturnFormSubmit = async () => {
-    if (!selectedLoanForReturnId || !currentUser) {
+    if (!selectedLoanForReturn || !currentUser) {
       toast({ title: "Erro", description: "Selecione uma cautela para devolver.", variant: "destructive" });
       return;
     }
     setIsSubmittingReturn(true);
     try {
-      updateLoanStatus(selectedLoanForReturnId, LoanStatus.DEVOLVIDO, undefined, undefined, returnObservation, currentUser.id);
+      await updateLoanStatus(selectedLoanForReturn.id, LoanStatus.DEVOLVIDO, equipmentIdsForCurrentReturn, undefined, undefined, returnObservation, currentUser.id);
       toast({ title: "Devolução Registrada", description: "A devolução foi registrada com sucesso." });
       setIsReturnDialogOpen(false);
-      setSelectedLoanForReturnId(undefined);
+      setSelectedLoanForReturn(null);
       setReturnObservation('');
+      setEquipmentIdsForCurrentReturn([]);
     } catch (error: any) {
       toast({ title: "Erro ao Registrar Devolução", description: error.message || "Ocorreu um erro.", variant: "destructive" });
     } finally {
       setIsSubmittingReturn(false);
     }
   };
-
+  
+  const getLoanEquipments = (loan: Loan) => {
+    return loan.equipmentIds.map(id => equipments.find(e => e.id === id)).filter(Boolean) as Equipment[];
+  }
+  
+  const handleSelectAllForReturn = (checked: boolean) => {
+    if (checked && selectedLoanForReturn) {
+      setEquipmentIdsForCurrentReturn(getLoanEquipments(selectedLoanForReturn).map(e => e.id));
+    } else {
+      setEquipmentIdsForCurrentReturn([]);
+    }
+  };
+  
+  const handleLoanSelectChange = (loanId: string) => {
+    const loan = activeLoansList.find(l => l.id === loanId);
+    if (loan) {
+      setSelectedLoanForReturn(loan);
+      setEquipmentIdsForCurrentReturn(getLoanEquipments(loan).map(e => e.id));
+    } else {
+      setSelectedLoanForReturn(null);
+      setEquipmentIdsForCurrentReturn([]);
+    }
+  };
 
   return (
     <>
@@ -127,7 +150,6 @@ export default function DashboardPage() {
       <div className="mt-8">
         <h2 className="text-2xl font-semibold font-headline text-foreground mb-4">Ações Rápidas</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Nova Cautela Card */}
           <Dialog open={isLoanDialogOpen} onOpenChange={setIsLoanDialogOpen}>
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
@@ -159,11 +181,10 @@ export default function DashboardPage() {
             </DialogContent>
           </Dialog>
 
-          {/* Registrar Devolução Card */}
           <Dialog open={isReturnDialogOpen} onOpenChange={(open) => {
             setIsReturnDialogOpen(open);
             if (!open) {
-              setSelectedLoanForReturnId(undefined);
+              setSelectedLoanForReturn(null);
               setReturnObservation('');
             }
           }}>
@@ -186,14 +207,14 @@ export default function DashboardPage() {
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Registrar Devolução de Equipamento</DialogTitle>
-                <ShadDialogDescription>Selecione a cautela ativa e, opcionalmente, adicione observações para registrar a devolução.</ShadDialogDescription>
+                <ShadDialogDescription>Selecione a cautela ativa para registrar a devolução.</ShadDialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="loan-select">Selecionar Cautela Ativa</Label>
                   <Select
-                    value={selectedLoanForReturnId}
-                    onValueChange={setSelectedLoanForReturnId}
+                    value={selectedLoanForReturn?.id}
+                    onValueChange={handleLoanSelectChange}
                     disabled={activeLoansList.length === 0}
                   >
                     <SelectTrigger id="loan-select">
@@ -202,13 +223,44 @@ export default function DashboardPage() {
                     <SelectContent>
                       {activeLoansList.map(loan => (
                         <SelectItem key={loan.id} value={loan.id}>
-                          ({getOfficerName(loan.officerId, officers)}) Data: {format(parseISO(loan.loanDate), "dd/MM/yy", { locale: ptBR })}
+                          ({getOfficerName(loan.officerId)}) Data: {format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   {activeLoansList.length === 0 && <p className="text-sm text-muted-foreground">Não há cautelas ativas para registrar devolução.</p>}
                 </div>
+
+                {selectedLoanForReturn && getLoanEquipments(selectedLoanForReturn).length > 1 && (
+                  <div className="space-y-2">
+                      <Label>Equipamentos a Devolver</Label>
+                      <ScrollArea className="h-40 w-full rounded-md border p-2">
+                          <div className="flex items-center space-x-2 pb-2 border-b mb-2">
+                              <Checkbox
+                                  id="select-all-return-dash"
+                                  checked={equipmentIdsForCurrentReturn.length === getLoanEquipments(selectedLoanForReturn).length}
+                                  onCheckedChange={handleSelectAllForReturn}
+                              />
+                              <Label htmlFor="select-all-return-dash" className="font-medium">Selecionar Todos</Label>
+                          </div>
+                          {getLoanEquipments(selectedLoanForReturn).map((equipment) => (
+                              <div key={equipment.id} className="flex items-center space-x-2 py-1">
+                                  <Checkbox
+                                      id={`return-dash-${equipment.id}`}
+                                      checked={equipmentIdsForCurrentReturn.includes(equipment.id)}
+                                      onCheckedChange={(checked) => {
+                                          setEquipmentIdsForCurrentReturn(currentIds => 
+                                              checked ? [...currentIds, equipment.id] : currentIds.filter(id => id !== equipment.id)
+                                          )
+                                      }}
+                                  />
+                                  <Label htmlFor={`return-dash-${equipment.id}`} className="font-normal">{equipment.brand} ({equipment.serialNumber})</Label>
+                              </div>
+                          ))}
+                      </ScrollArea>
+                  </div>
+                )}
+                
                 <div className="space-y-2">
                   <Label htmlFor="return-observation">Observações da Devolução (Opcional)</Label>
                   <Textarea
@@ -221,14 +273,13 @@ export default function DashboardPage() {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsReturnDialogOpen(false)}>Cancelar</Button>
-                <Button onClick={handleReturnFormSubmit} disabled={isSubmittingReturn || !selectedLoanForReturnId || activeLoansList.length === 0}>
+                <Button onClick={handleReturnFormSubmit} disabled={isSubmittingReturn || !selectedLoanForReturn || equipmentIdsForCurrentReturn.length === 0}>
                   {isSubmittingReturn ? "Registrando..." : "Confirmar Devolução"}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
 
-          {/* Ver Relatórios Card */}
           <Link href="/dashboard/relatorios" legacyBehavior>
             <a className="block">
               <Card className="hover:shadow-lg transition-shadow h-full">
@@ -249,7 +300,6 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
-
     </>
   );
 }

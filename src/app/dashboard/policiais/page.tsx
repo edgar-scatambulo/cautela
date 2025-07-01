@@ -18,13 +18,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { PoliceOfficerForm } from './components/police-officer-form';
 import { useStore } from '@/lib/store';
-import type { PoliceOfficer, Loan } from '@/lib/types';
+import type { PoliceOfficer, Loan, Equipment } from '@/lib/types';
 import { LoanStatus, UserRole } from '@/lib/types';
 import { Shield, UserPlus, Edit3, Award, Trash2, Eye, Info, UserCircle, Mail, CalendarDays, Printer as PrinterIconLucide, CaseSensitive } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PoliceOfficerSchema } from '@/lib/schemas';
 import type { z } from 'zod';
-import { format, parseISO } from 'date-fns';
+import { format, parse, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
@@ -33,7 +33,6 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 
 const ContactDisplay = ({ contactValue }: { contactValue: string }) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  // Heuristic regex to identify strings that might be phone numbers
   const phoneIndicatorRegex = /(\d{2,}\)?\s?\d{4,}-?\d{4,})/;
 
   if (emailRegex.test(contactValue)) {
@@ -44,12 +43,11 @@ const ContactDisplay = ({ contactValue }: { contactValue: string }) => {
     );
   }
 
-  const cleanedPhone = contactValue.replace(/\D/g, ''); // Remove all non-digits
+  const cleanedPhone = contactValue.replace(/\D/g, ''); 
   const isLikelyPhone = phoneIndicatorRegex.test(contactValue) && cleanedPhone.length >= 8;
 
   if (isLikelyPhone) {
     let whatsappNumber = cleanedPhone;
-    // Add '55' for Brazilian numbers if it's a common length (10 or 11 digits) and doesn't start with '55'
     if ((whatsappNumber.length === 10 || whatsappNumber.length === 11) && !whatsappNumber.startsWith('55')) {
       whatsappNumber = '55' + whatsappNumber;
     }
@@ -71,7 +69,7 @@ const ContactDisplay = ({ contactValue }: { contactValue: string }) => {
 
 
 export default function PoliciaisPage() {
-  const { officers, addOfficer, updateOfficer, deleteOfficer, loans, currentUser } = useStore();
+  const { officers, addOfficer, updateOfficer, deleteOfficer, loans, equipments, currentUser } = useStore();
   const { toast } = useToast();
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingOfficer, setEditingOfficer] = React.useState<PoliceOfficer | undefined>(undefined);
@@ -89,13 +87,13 @@ export default function PoliciaisPage() {
     setIsSubmitting(true);
     try {
       if (editingOfficer) {
-        updateOfficer({ ...editingOfficer, ...values }); 
+        await updateOfficer({ ...editingOfficer, ...values }); 
         toast({ title: "Policial Atualizado", description: `Os dados de ${values.name} foram atualizados.` });
       } else {
         const newOfficerData = {
           ...values, 
         } as Omit<PoliceOfficer, 'id' | 'createdAt' | 'updatedAt'>;
-        addOfficer(newOfficerData);
+        await addOfficer(newOfficerData);
         toast({ title: "Policial Adicionado", description: `${values.name} foi adicionado ao sistema.` });
       }
       setIsFormDialogOpen(false);
@@ -122,14 +120,16 @@ export default function PoliciaisPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (officerToDelete) {
+      setIsSubmitting(true);
       try {
-        deleteOfficer(officerToDelete.id);
+        await deleteOfficer(officerToDelete.id);
         toast({ title: "Policial Excluído", description: `O policial ${officerToDelete.name} foi excluído.` });
       } catch (error: any) {
          toast({ title: "Erro ao Excluir", description: error.message, variant: "destructive" });
       } finally {
+        setIsSubmitting(false);
         setIsDeleteDialogOpen(false);
         setOfficerToDelete(null);
       }
@@ -139,7 +139,7 @@ export default function PoliciaisPage() {
   const openDetailsDialog = (officer: PoliceOfficer) => {
     setSelectedOfficerForDetails(officer);
     const history = loans.filter(loan => loan.officerId === officer.id)
-                         .sort((a, b) => parseISO(b.loanDate).getTime() - parseISO(a.loanDate).getTime());
+                         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     setOfficerLoanHistory(history);
     setIsDetailsDialogOpen(true);
   };
@@ -166,6 +166,10 @@ export default function PoliciaisPage() {
       }
     }, 100); 
   };
+  
+  const getLoanEquipments = (loan: Loan) => {
+    return loan.equipmentIds.map(id => equipments.find(e => e.id === id)).filter(Boolean) as Equipment[];
+  }
 
   const canManageOfficers = currentUser?.role === UserRole.ADMIN;
 
@@ -295,13 +299,14 @@ export default function PoliciaisPage() {
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza que deseja excluir o policial <span className="font-semibold">{officerToDelete?.name}</span>?
-              {officerToDelete?.functionalId && <> O contato associado é <ContactDisplay contactValue={officerToDelete.functionalId} />.</>}
               Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setOfficerToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+            <AlertDialogAction onClick={handleConfirmDelete} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">
+              {isSubmitting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -359,15 +364,15 @@ export default function PoliciaisPage() {
                             <TableRow key={loan.id}>
                               <TableCell>
                                   <ul className="list-disc list-inside text-xs">
-                                    {loan.equipment.map(eq => (
+                                    {getLoanEquipments(loan).map(eq => (
                                       <li key={eq.id}>{eq.brand} ({eq.serialNumber})</li>
                                     ))}
                                   </ul>
                               </TableCell>
-                              <TableCell>{format(parseISO(loan.loanDate), "dd/MM/yy", { locale: ptBR })}</TableCell>
+                              <TableCell>{format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })}</TableCell>
                               <TableCell>
                                 {loan.actualReturnDate 
-                                  ? format(parseISO(loan.actualReturnDate), "dd/MM/yy", { locale: ptBR })
+                                  ? format(parse(loan.actualReturnDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })
                                   : (loan.expectedReturnDate ? `Prev: ${format(parseISO(loan.expectedReturnDate), "dd/MM/yy", { locale: ptBR })}` : 'N/A')}
                               </TableCell>
                               <TableCell>
@@ -402,5 +407,3 @@ export default function PoliciaisPage() {
     </TooltipProvider>
   );
 }
-    
-

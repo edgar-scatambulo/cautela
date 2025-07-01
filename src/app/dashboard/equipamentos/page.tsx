@@ -23,7 +23,7 @@ import { Smartphone, Printer as PrinterIconLucide, Radio, PlusCircle, Edit3, Tra
 import { useToast } from '@/hooks/use-toast';
 import { EquipmentSchema } from '@/lib/schemas';
 import type { z } from 'zod';
-import { format, parseISO } from 'date-fns';
+import { format, parse, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
@@ -69,7 +69,7 @@ export default function EquipamentosPage() {
     try {
       if (editingEquipment) {
         const updatedValues = { ...editingEquipment, ...values };
-        updateEquipment({ ...updatedValues, serialNumber: values.serialNumber.toUpperCase() });
+        await updateEquipment({ ...updatedValues, serialNumber: values.serialNumber.toUpperCase() });
         toast({ title: "Equipamento Atualizado", description: `O equipamento ${values.brand} foi atualizado.` });
       } else {
         const newEquipmentData = {
@@ -77,13 +77,13 @@ export default function EquipamentosPage() {
           serialNumber: values.serialNumber.toUpperCase(),
           status: values.status || 'Disponível',
         } as Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>;
-        addEquipment(newEquipmentData);
+        await addEquipment(newEquipmentData);
         toast({ title: "Equipamento Adicionado", description: `O equipamento ${values.brand} foi adicionado.` });
       }
       setIsFormDialogOpen(false);
       setEditingEquipment(undefined);
-    } catch (error) {
-      toast({ title: "Erro", description: "Ocorreu um erro ao salvar o equipamento.", variant: "destructive" });
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message || "Ocorreu um erro ao salvar o equipamento.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -104,14 +104,16 @@ export default function EquipamentosPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (equipmentToDelete) {
+      setIsSubmitting(true);
       try {
-        deleteEquipment(equipmentToDelete.id);
+        await deleteEquipment(equipmentToDelete.id);
         toast({ title: "Equipamento Excluído", description: `O equipamento ${equipmentToDelete.brand} foi excluído.` });
       } catch (error: any) {
          toast({ title: "Erro ao Excluir", description: error.message, variant: "destructive" });
       } finally {
+        setIsSubmitting(false);
         setIsDeleteDialogOpen(false);
         setEquipmentToDelete(null);
       }
@@ -120,8 +122,8 @@ export default function EquipamentosPage() {
 
   const openDetailsDialog = (equipment: Equipment) => {
     setSelectedEquipmentForDetails(equipment);
-    const history = loans.filter(loan => loan.equipment.some(eq => eq.id === equipment.id))
-                         .sort((a, b) => parseISO(b.loanDate).getTime() - parseISO(a.loanDate).getTime()); // Sort by most recent
+    const history = loans.filter(loan => loan.equipmentIds.includes(equipment.id))
+                         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); // Sort by most recent
     setEquipmentLoanHistory(history);
     setIsDetailsDialogOpen(true);
   };
@@ -132,10 +134,8 @@ export default function EquipamentosPage() {
     setPrintEquipmentHistoryTitle(`Detalhes do Equipamento: ${selectedEquipmentForDetails.brand} (Patrimônio: ${selectedEquipmentForDetails.serialNumber})`);
     
     setTimeout(() => {
-      document.body.classList.add('print-equipment-details-active'); // Used to scope print styles
+      document.body.classList.add('print-equipment-details-active');
       window.print();
-      // Clean up class after print dialog closes or print is done
-      // Using onafterprint if available, or a timeout as a fallback
       if (typeof window.onafterprint === 'function') {
         window.onafterprint = () => {
           document.body.classList.remove('print-equipment-details-active');
@@ -146,7 +146,7 @@ export default function EquipamentosPage() {
         setTimeout(() => {
           document.body.classList.remove('print-equipment-details-active');
           setPrintEquipmentHistoryTitle('');
-        }, 1000); // Fallback timeout
+        }, 1000);
       }
     }, 100); 
   };
@@ -266,7 +266,6 @@ export default function EquipamentosPage() {
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -277,12 +276,13 @@ export default function EquipamentosPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setEquipmentToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+            <AlertDialogAction onClick={handleConfirmDelete} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">
+                {isSubmitting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Equipment Details Dialog */}
       <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
         <DialogContent className="sm:max-w-3xl print:max-w-none print:w-full print:h-auto print:overflow-visible" id="equipment-details-dialog-content">
           <DialogHeader className="dialog-header-non-print">
@@ -301,10 +301,10 @@ export default function EquipamentosPage() {
           
           {selectedEquipmentForDetails && (
             <>
-              <div className="equipment-general-info-non-print space-y-4 py-4"> {/* Adjusted space-y */}
+              <div className="equipment-general-info-non-print space-y-4 py-4">
                 <div>
                   <h3 className="text-lg font-semibold mb-2 font-headline">Informações Gerais</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-sm"> {/* Adjusted gap-y */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-sm">
                     <div><strong className="text-muted-foreground">Tipo:</strong> {selectedEquipmentForDetails.type}</div>
                     <div><strong className="text-muted-foreground">Marca / Modelo:</strong> {selectedEquipmentForDetails.brand}{selectedEquipmentForDetails.model ? ` ${selectedEquipmentForDetails.model}` : ''}</div>
                     <div><strong className="text-muted-foreground">Patrimônio:</strong> {selectedEquipmentForDetails.serialNumber}</div>
@@ -342,10 +342,10 @@ export default function EquipamentosPage() {
                           {equipmentLoanHistory.map(loan => (
                             <TableRow key={loan.id}>
                               <TableCell className="font-medium">{getOfficerNameLocal(loan.officerId, officers)}</TableCell>
-                              <TableCell>{format(parseISO(loan.loanDate), "dd/MM/yy", { locale: ptBR })}</TableCell>
+                              <TableCell>{format(parse(loan.loanDate, "yyyy-MM-dd", new Date()), "dd/MM/yy", { locale: ptBR })}</TableCell>
                               <TableCell>
                                 {loan.actualReturnDate 
-                                  ? format(parseISO(loan.actualReturnDate), "dd/MM/yy", { locale: ptBR })
+                                  ? format(parse(loan.actualReturnDate, "yyyy-MM-dd", new Date()), "dd/MM/yy", { locale: ptBR })
                                   : 'N/A'}
                               </TableCell>
                               <TableCell>
@@ -380,11 +380,3 @@ export default function EquipamentosPage() {
     </TooltipProvider>
   );
 }
-    
-
-    
-
-    
-
-
-
