@@ -20,7 +20,7 @@ import { PoliceOfficerForm } from './components/police-officer-form';
 import { useStore } from '@/lib/store';
 import type { PoliceOfficer, Loan, Equipment } from '@/lib/types';
 import { LoanStatus, UserRole } from '@/lib/types';
-import { Shield, UserPlus, Edit3, Award, Trash2, Eye, Info, UserCircle, Mail, CalendarDays, Printer as PrinterIconLucide, CaseSensitive } from 'lucide-react';
+import { Shield, UserPlus, Edit3, Award, Trash2, Eye, Info, UserCircle, Mail, CalendarDays, Printer as PrinterIconLucide, CaseSensitive, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PoliceOfficerSchema } from '@/lib/schemas';
 import type { z } from 'zod';
@@ -30,6 +30,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import Papa from 'papaparse';
 
 const ContactDisplay = ({ contactValue }: { contactValue: string }) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -67,9 +70,13 @@ const ContactDisplay = ({ contactValue }: { contactValue: string }) => {
   return <span className="font-medium text-foreground ml-1">{contactValue}</span>;
 };
 
+type ParsedOfficer = z.infer<typeof PoliceOfficerSchema> & {
+    errors?: z.ZodIssue[];
+    originalRow: any;
+};
 
 export default function PoliciaisPage() {
-  const { officers, addOfficer, updateOfficer, deleteOfficer, loans, equipments, currentUser } = useStore();
+  const { officers, addOfficer, updateOfficer, deleteOfficer, loans, equipments, currentUser, addMultipleOfficers } = useStore();
   const { toast } = useToast();
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingOfficer, setEditingOfficer] = React.useState<PoliceOfficer | undefined>(undefined);
@@ -82,6 +89,10 @@ export default function PoliciaisPage() {
   const [officerLoanHistory, setOfficerLoanHistory] = React.useState<Loan[]>([]);
   const [printOfficerHistoryTitle, setPrintOfficerHistoryTitle] = React.useState('');
 
+  const [isImportDialogOpen, setIsImportDialogOpen] = React.useState(false);
+  const [isImporting, setIsImporting] = React.useState(false);
+  const [parsedData, setParsedData] = React.useState<ParsedOfficer[]>([]);
+
 
   const handleFormSubmit = async (values: z.infer<typeof PoliceOfficerSchema>) => {
     setIsSubmitting(true);
@@ -90,10 +101,7 @@ export default function PoliciaisPage() {
         await updateOfficer({ ...editingOfficer, ...values }); 
         toast({ title: "Policial Atualizado", description: `Os dados de ${values.name} foram atualizados.` });
       } else {
-        const newOfficerData = {
-          ...values, 
-        } as Omit<PoliceOfficer, 'id' | 'createdAt' | 'updatedAt'>;
-        await addOfficer(newOfficerData);
+        await addOfficer(values as Omit<PoliceOfficer, 'id' | 'createdAt' | 'updatedAt'>);
         toast({ title: "Policial Adicionado", description: `${values.name} foi adicionado ao sistema.` });
       }
       setIsFormDialogOpen(false);
@@ -171,7 +179,166 @@ export default function PoliciaisPage() {
     return loan.equipmentIds.map(id => equipments.find(e => e.id === id)).filter(Boolean) as Equipment[];
   }
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setParsedData([]);
+      return;
+    }
+
+    Papa.parse<any>(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const validatedData = results.data.map(row => {
+          const result = PoliceOfficerSchema.omit({id: true}).safeParse({
+            ...row,
+            fullName: row.fullName || undefined,
+            unit: row.unit || undefined,
+            observations: row.observations || undefined,
+          });
+
+          if (result.success) {
+            return { ...result.data, originalRow: row, errors: undefined };
+          } else {
+            return {
+              ...result.error,
+              errors: result.error.issues,
+              originalRow: row,
+              name: row.name || 'Inválido',
+              functionalId: row.functionalId || 'Inválido',
+              rank: row.rank || 'Inválido',
+            };
+          }
+        });
+        setParsedData(validatedData as ParsedOfficer[]);
+      },
+      error: (error) => {
+        toast({ title: "Erro ao ler CSV", description: error.message, variant: "destructive" });
+        setParsedData([]);
+      }
+    });
+  };
+  
+  const handleImportConfirm = async () => {
+    const validOfficers = parsedData
+      .filter(p => !p.errors)
+      .map(p => {
+        const { errors, originalRow, ...officerData } = p;
+        return officerData as Omit<PoliceOfficer, 'id' | 'createdAt' | 'updatedAt'>;
+      });
+
+    if (validOfficers.length === 0) {
+      toast({ title: "Nenhum policial válido para importar", variant: "destructive" });
+      return;
+    }
+    
+    setIsImporting(true);
+    try {
+        await addMultipleOfficers(validOfficers);
+        toast({ title: "Importação Concluída", description: `${validOfficers.length} policiais foram importados com sucesso.` });
+        setIsImportDialogOpen(false);
+        setParsedData([]);
+    } catch (error: any) {
+        toast({ title: "Erro na Importação", description: error.message, variant: "destructive" });
+    } finally {
+        setIsImporting(false);
+    }
+  };
+
+
   const canManageOfficers = currentUser?.role === UserRole.ADMIN;
+
+  const pageActions = canManageOfficers ? (
+    <div className="flex gap-2">
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline">
+              <Upload className="mr-2 h-4 w-4" /> Importar CSV
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-4xl">
+              <DialogHeader>
+                  <DialogTitle>Importar Policiais em Lote</DialogTitle>
+                  <ShadDialogDescription>
+                      Faça o upload de um arquivo CSV. O arquivo deve conter as colunas: <b>name</b>, <b>fullName</b>, <b>functionalId</b>, <b>rank</b>. As colunas <b>unit</b> e <b>observations</b> são opcionais.
+                  </ShadDialogDescription>
+              </DialogHeader>
+              <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
+                  <Label htmlFor="csv-file">Arquivo CSV</Label>
+                  <Input id="csv-file" type="file" accept=".csv" onChange={handleFileChange} />
+              </div>
+              {parsedData.length > 0 && (
+                  <ScrollArea className="h-72 w-full rounded-md border">
+                      <Table>
+                          <TableHeader>
+                              <TableRow>
+                                  <TableHead>Nome de Guerra</TableHead>
+                                  <TableHead>Contato</TableHead>
+                                  <TableHead>Posto/Grad.</TableHead>
+                                  <TableHead>Status</TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {parsedData.map((officer, index) => (
+                                  <TableRow key={index}>
+                                      <TableCell>{officer.originalRow.name || '---'}</TableCell>
+                                      <TableCell>{officer.originalRow.functionalId || '---'}</TableCell>
+                                      <TableCell>{officer.originalRow.rank || '---'}</TableCell>
+                                      <TableCell>
+                                          {officer.errors ? (
+                                            <TooltipProvider>
+                                              <Tooltip>
+                                                <TooltipTrigger>
+                                                  <Badge variant="destructive">Inválido</Badge>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                  <ul className="list-disc list-inside text-sm">
+                                                    {officer.errors.map(e => <li key={e.path.join('.')}>{e.message}</li>)}
+                                                  </ul>
+                                                </TooltipContent>
+                                              </Tooltip>
+                                            </TooltipProvider>
+                                          ) : (
+                                              <Badge className="bg-green-500 hover:bg-green-600">Válido</Badge>
+                                          )}
+                                      </TableCell>
+                                  </TableRow>
+                              ))}
+                          </TableBody>
+                      </Table>
+                  </ScrollArea>
+              )}
+              <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>Cancelar</Button>
+                  <Button onClick={handleImportConfirm} disabled={isImporting || parsedData.filter(p => !p.errors).length === 0}>
+                      {isImporting ? "Importando..." : `Importar ${parsedData.filter(p => !p.errors).length} Válidos`}
+                  </Button>
+              </DialogFooter>
+          </DialogContent>
+      </Dialog>
+      <Dialog open={isFormDialogOpen} onOpenChange={(open) => { setIsFormDialogOpen(open); if(!open) setEditingOfficer(undefined); }}>
+        <DialogTrigger asChild>
+          <Button onClick={openAddDialog}>
+            <UserPlus className="mr-2 h-4 w-4" /> Adicionar Policial
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingOfficer ? 'Editar Dados do Policial' : 'Adicionar Novo Policial'}</DialogTitle>
+            <ShadDialogDescription>
+                {editingOfficer ? 'Modifique os dados do policial abaixo.' : ''}
+            </ShadDialogDescription>
+          </DialogHeader>
+          <PoliceOfficerForm 
+            onSubmit={handleFormSubmit} 
+            defaultValues={editingOfficer}
+            isSubmitting={isSubmitting} 
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
+  ) : null;
 
   return (
     <TooltipProvider>
@@ -179,30 +346,7 @@ export default function PoliciaisPage() {
         title="Gerenciamento de Policiais"
         description="Cadastre, visualize e edite os dados dos policiais."
         icon={Shield}
-        actions={
-          canManageOfficers ? (
-            <Dialog open={isFormDialogOpen} onOpenChange={(open) => { setIsFormDialogOpen(open); if(!open) setEditingOfficer(undefined); }}>
-              <DialogTrigger asChild>
-                <Button onClick={openAddDialog}>
-                  <UserPlus className="mr-2 h-4 w-4" /> Adicionar Policial
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>{editingOfficer ? 'Editar Dados do Policial' : 'Adicionar Novo Policial'}</DialogTitle>
-                  <ShadDialogDescription>
-                     {editingOfficer ? 'Modifique os dados do policial abaixo.' : ''}
-                  </ShadDialogDescription>
-                </DialogHeader>
-                <PoliceOfficerForm 
-                  onSubmit={handleFormSubmit} 
-                  defaultValues={editingOfficer}
-                  isSubmitting={isSubmitting} 
-                />
-              </DialogContent>
-            </Dialog>
-          ) : null
-        }
+        actions={pageActions}
       />
 
       {officers.length === 0 ? (

@@ -66,6 +66,7 @@ interface AppState {
 
   // Officer Actions
   addOfficer: (officerData: Omit<PoliceOfficer, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  addMultipleOfficers: (officersData: Omit<PoliceOfficer, 'id' | 'createdAt' | 'updatedAt'>[]) => Promise<void>;
   updateOfficer: (officer: PoliceOfficer) => Promise<void>;
   deleteOfficer: (officerId: string) => Promise<void>;
   
@@ -187,6 +188,9 @@ export const useStore = create<AppState>((set, get) => ({
         if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
             throw new Error("Email ou senha inválidos.");
         }
+        if (error.code === 'auth/configuration-not-found') {
+           throw new Error("Configuração do Firebase não encontrada. Verifique se o arquivo .env.local está correto e reinicie o servidor de desenvolvimento.");
+       }
         throw error; // Re-throw other errors
     }
   },
@@ -214,23 +218,30 @@ export const useStore = create<AppState>((set, get) => ({
     const usernameSnap = await getDocs(usernameQuery);
     if (!usernameSnap.empty) throw new Error("Nome de usuário já existe.");
 
-    const emailQuery = query(usersCollectionRef, where('email', '==', signupData.email));
-    const emailSnap = await getDocs(emailQuery);
-    if (!emailSnap.empty) throw new Error("Este email já está em uso.");
+    // Check for email in auth, not just firestore
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, signupData.email, signupData.password);
+        const firebaseUser = userCredential.user;
 
-    const userCredential = await createUserWithEmailAndPassword(auth, signupData.email, signupData.password);
-    const firebaseUser = userCredential.user;
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        const { password, ...userDataForFirestore } = signupData;
 
-    const userDocRef = doc(db, 'users', firebaseUser.uid);
-    const { password, ...userDataForFirestore } = signupData;
-
-    await setDoc(userDocRef, {
-        ...userDataForFirestore,
-        role: UserRole.ADMIN,
-        isActive: true,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-    });
+        await setDoc(userDocRef, {
+            ...userDataForFirestore,
+            role: UserRole.ADMIN,
+            isActive: true,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        });
+    } catch (error: any) {
+        if (error.code === 'auth/email-already-in-use') {
+            throw new Error("Este email já está em uso por outra conta.");
+        }
+        if (error.code === 'auth/configuration-not-found') {
+           throw new Error("Configuração do Firebase não encontrada. Verifique se o arquivo .env.local está correto e reinicie o servidor de desenvolvimento.");
+       }
+        throw error;
+    }
   },
 
   addUser: async (userData) => {
@@ -241,22 +252,25 @@ export const useStore = create<AppState>((set, get) => ({
     const usernameQuery = query(collection(db, 'users'), where('username', '==', userData.username));
     const usernameSnap = await getDocs(usernameQuery);
     if (!usernameSnap.empty) throw new Error("Nome de usuário já existe.");
-
-    const emailQuery = query(collection(db, 'users'), where('email', '==', userData.email));
-    const emailSnap = await getDocs(emailQuery);
-    if (!emailSnap.empty) throw new Error("Este email já está em uso.");
-
-    const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
-    const firebaseUser = userCredential.user;
-
-    const userDocRef = doc(db, 'users', firebaseUser.uid);
-    const { password, ...userDataForFirestore } = userData;
     
-    await setDoc(userDocRef, {
-        ...userDataForFirestore,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-    });
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
+        const firebaseUser = userCredential.user;
+
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        const { password, ...userDataForFirestore } = userData;
+        
+        await setDoc(userDocRef, {
+            ...userDataForFirestore,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        });
+    } catch (error: any) {
+        if (error.code === 'auth/email-already-in-use') {
+            throw new Error("Este email já está em uso por outra conta.");
+        }
+        throw error;
+    }
   },
 
   updateUser: async (userData) => {
@@ -296,11 +310,35 @@ export const useStore = create<AppState>((set, get) => ({
 
   addOfficer: async (officerData) => {
     if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
+    const q = query(collection(db, 'officers'), where('functionalId', '==', officerData.functionalId));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+        throw new Error(`Policial com o contato '${officerData.functionalId}' já existe.`);
+    }
+
     await addDoc(collection(db, 'officers'), {
       ...officerData,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
+  },
+
+  addMultipleOfficers: async (officersData) => {
+    if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
+    const batch = writeBatch(db);
+    
+    // Note: This does not check for duplicates within the batch or against the DB
+    // for performance reasons. Handle duplicates upstream or post-import if necessary.
+    officersData.forEach(officerData => {
+      const newOfficerRef = doc(collection(db, 'officers'));
+      batch.set(newOfficerRef, {
+        ...officerData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    });
+
+    await batch.commit();
   },
 
   updateOfficer: async (officer) => {
