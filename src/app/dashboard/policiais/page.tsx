@@ -92,6 +92,12 @@ export default function PoliciaisPage() {
   const [isImportDialogOpen, setIsImportDialogOpen] = React.useState(false);
   const [isImporting, setIsImporting] = React.useState(false);
   const [parsedData, setParsedData] = React.useState<ParsedOfficer[]>([]);
+  const [sortedOfficers, setSortedOfficers] = React.useState<PoliceOfficer[]>([]);
+
+  React.useEffect(() => {
+    const sorted = [...officers].sort((a, b) => a.name.localeCompare(b.name));
+    setSortedOfficers(sorted);
+  }, [officers]);
 
 
   const handleFormSubmit = async (values: z.infer<typeof PoliceOfficerSchema>) => {
@@ -361,80 +367,72 @@ export default function PoliciaisPage() {
             )}
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {officers.map((officer) => (
-            <Card key={officer.id} className="flex flex-col">
-              <CardHeader>
-                <div className="flex items-start justify-between mb-2">
-                  <UserCircle className="h-8 w-8 text-primary" /> 
-                </div>
-                <CardTitle className="text-lg font-semibold font-headline">{officer.name}</CardTitle> 
-                {officer.fullName && (
-                  <CardDescription className="flex items-center text-sm text-muted-foreground">
-                    <CaseSensitive className="h-4 w-4 mr-2 shrink-0" />{officer.fullName}
-                  </CardDescription>
-                )}
-                <CardDescription className="flex items-center text-sm">
-                  <Award className="h-4 w-4 mr-2 text-muted-foreground" /> {officer.rank}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-grow space-y-1">
-                <p className="text-sm text-muted-foreground flex items-center">
-                  <Mail className="h-4 w-4 mr-2 shrink-0" /> Contato: <ContactDisplay contactValue={officer.functionalId} />
-                </p>
-                {officer.unit && (
-                  <p className="text-sm text-muted-foreground flex items-center">
-                     Unidade: <span className="font-medium text-foreground ml-1">{officer.unit}</span>
-                  </p>
-                )}
-                {officer.observations && (
-                  <p className="text-sm text-muted-foreground mt-2">Obs: {officer.observations}</p>
-                )}
-              </CardContent>
-              <CardFooter className="border-t pt-4">
-                <div className="flex w-full justify-end space-x-2">
-                   <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" onClick={() => openDetailsDialog(officer)} className="text-primary hover:bg-primary/10">
-                        <Eye className="h-4 w-4" />
-                        <span className="sr-only">Ver Detalhes</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Ver Detalhes</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  {canManageOfficers && (
-                    <>
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome de Guerra</TableHead>
+                <TableHead>Nome Completo</TableHead>
+                <TableHead>Posto / Graduação</TableHead>
+                <TableHead>Contato</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedOfficers.map((officer) => (
+                <TableRow key={officer.id}>
+                  <TableCell className="font-medium">{officer.name}</TableCell>
+                  <TableCell>{officer.fullName || '---'}</TableCell>
+                  <TableCell>{officer.rank}</TableCell>
+                  <TableCell>
+                    <ContactDisplay contactValue={officer.functionalId} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end space-x-1">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={() => openEditDialog(officer)}>
-                                <Edit3 className="h-4 w-4" />
-                                <span className="sr-only">Editar</span>
-                            </Button>
+                          <Button variant="ghost" size="icon" onClick={() => openDetailsDialog(officer)} className="text-primary hover:bg-primary/10">
+                            <Eye className="h-4 w-4" />
+                            <span className="sr-only">Ver Detalhes</span>
+                          </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Editar</p>
+                          <p>Ver Detalhes</p>
                         </TooltipContent>
                       </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="destructive" size="icon" onClick={() => openDeleteDialog(officer)}>
-                                <Trash2 className="h-4 w-4" />
-                                <span className="sr-only">Excluir</span>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Excluir</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </>
-                  )}
-                </div>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+                      {canManageOfficers && (
+                        <>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" onClick={() => openEditDialog(officer)}>
+                                    <Edit3 className="h-4 w-4" />
+                                    <span className="sr-only">Editar</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Editar</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="destructive" size="icon" onClick={() => openDeleteDialog(officer)}>
+                                    <Trash2 className="h-4 w-4" />
+                                    <span className="sr-only">Excluir</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Excluir</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
