@@ -67,7 +67,18 @@ export default function EquipamentosPage() {
   
   const [selectedEquipmentIds, setSelectedEquipmentIds] = React.useState<string[]>([]);
   const [isMultiDeleteDialogOpen, setIsMultiDeleteDialogOpen] = React.useState(false);
+  const [sortedEquipments, setSortedEquipments] = React.useState<Equipment[]>([]);
 
+  React.useEffect(() => {
+    const sorted = [...equipments].sort((a, b) => {
+      const typeComparison = a.type.localeCompare(b.type);
+      if (typeComparison !== 0) {
+        return typeComparison;
+      }
+      return a.serialNumber.localeCompare(b.serialNumber);
+    });
+    setSortedEquipments(sorted);
+  }, [equipments]);
 
   const handleFormSubmit = async (values: z.infer<typeof EquipmentSchema>) => {
     setIsSubmitting(true);
@@ -242,6 +253,9 @@ export default function EquipamentosPage() {
     }
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
 
   const canManageEquipments = currentUser?.role === UserRole.ADMIN;
   
@@ -263,108 +277,119 @@ export default function EquipamentosPage() {
   
   const allDeletableSelected = equipmentsThatCanBeDeleted.length > 0 && selectedEquipmentIds.length > 0 && equipmentsThatCanBeDeleted.every(e => selectedEquipmentIds.includes(e.id));
   
-  const pageActions = canManageEquipments ? (
+  const pageActions = (
     <div className="flex gap-2">
-      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline">
-              <Upload className="mr-2 h-4 w-4" /> Importar CSV
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-4xl">
-              <DialogHeader>
-                  <DialogTitle>Importar Equipamentos em Lote</DialogTitle>
-                  <ShadDialogDescription>
-                      Faça o upload de um arquivo CSV. O cabeçalho deve incluir as colunas obrigatórias: <b>type</b>, <b>brand</b>, <b>serialNumber</b>.
-                      Colunas opcionais: <b>model</b>, <b>status</b> (padrão 'Disponível'), <b>observations</b>.
-                      Os valores para <b>type</b> devem ser exatamente 'Celular', 'Impressora' ou 'Rádio'.
-                  </ShadDialogDescription>
-              </DialogHeader>
-              <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
-                  <Label htmlFor="csv-file-equip">Arquivo CSV</Label>
-                  <Input id="csv-file-equip" type="file" accept=".csv" onChange={handleFileChange} />
-              </div>
-              {parsedData.length > 0 && (
-                  <ScrollArea className="h-72 w-full rounded-md border">
-                      <Table>
-                          <TableHeader>
-                              <TableRow>
-                                  <TableHead>Marca/Modelo</TableHead>
-                                  <TableHead>Patrimônio</TableHead>
-                                  <TableHead>Tipo</TableHead>
-                                  <TableHead>Status</TableHead>
-                              </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                              {parsedData.map((equip, index) => (
-                                  <TableRow key={index}>
-                                      <TableCell>{equip.originalRow.brand || '---'}</TableCell>
-                                      <TableCell>{equip.originalRow.serialNumber || '---'}</TableCell>
-                                      <TableCell>{equip.originalRow.type || '---'}</TableCell>
-                                      <TableCell>
-                                          {equip.errors ? (
-                                            <TooltipProvider>
-                                              <Tooltip>
-                                                <TooltipTrigger>
-                                                  <Badge variant="destructive">Inválido</Badge>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                  <ul className="list-disc list-inside text-sm">
-                                                    {equip.errors.map(e => <li key={e.path.join('.')}>{e.message}</li>)}
-                                                  </ul>
-                                                </TooltipContent>
-                                              </Tooltip>
-                                            </TooltipProvider>
-                                          ) : (
-                                              <Badge className="bg-green-500 hover:bg-green-600">Válido</Badge>
-                                          )}
-                                      </TableCell>
+      <Button onClick={handlePrint} variant="outline">
+        <PrinterIconLucide className="mr-2 h-4 w-4" /> Imprimir Lista
+      </Button>
+      {canManageEquipments && (
+        <>
+          <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Upload className="mr-2 h-4 w-4" /> Importar CSV
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-4xl">
+                  <DialogHeader>
+                      <DialogTitle>Importar Equipamentos em Lote</DialogTitle>
+                      <ShadDialogDescription>
+                          Faça o upload de um arquivo CSV. O cabeçalho deve incluir as colunas obrigatórias: <b>type</b>, <b>brand</b>, <b>serialNumber</b>.
+                          Colunas opcionais: <b>model</b>, <b>status</b> (padrão 'Disponível'), <b>observations</b>.
+                          Os valores para <b>type</b> devem ser exatamente 'Celular', 'Impressora' ou 'Rádio'.
+                      </ShadDialogDescription>
+                  </DialogHeader>
+                  <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
+                      <Label htmlFor="csv-file-equip">Arquivo CSV</Label>
+                      <Input id="csv-file-equip" type="file" accept=".csv" onChange={handleFileChange} />
+                  </div>
+                  {parsedData.length > 0 && (
+                      <ScrollArea className="h-72 w-full rounded-md border">
+                          <Table>
+                              <TableHeader>
+                                  <TableRow>
+                                      <TableHead>Marca/Modelo</TableHead>
+                                      <TableHead>Patrimônio</TableHead>
+                                      <TableHead>Tipo</TableHead>
+                                      <TableHead>Status</TableHead>
                                   </TableRow>
-                              ))}
-                          </TableBody>
-                      </Table>
-                  </ScrollArea>
-              )}
-              <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>Cancelar</Button>
-                  <Button onClick={handleImportConfirm} disabled={isImporting || parsedData.filter(p => !p.errors).length === 0}>
-                      {isImporting ? "Importando..." : `Importar ${parsedData.filter(p => !p.errors).length} Válidos`}
-                  </Button>
-              </DialogFooter>
-          </DialogContent>
-      </Dialog>
-      <Dialog open={isFormDialogOpen} onOpenChange={(open) => { setIsFormDialogOpen(open); if(!open) setEditingEquipment(undefined); }}>
-        <DialogTrigger asChild>
-          <Button onClick={openAddDialog}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Equipamento
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editingEquipment ? 'Editar Equipamento' : 'Adicionar Novo Equipamento'}</DialogTitle>
-          </DialogHeader>
-          <EquipmentForm 
-            onSubmit={handleFormSubmit} 
-            defaultValues={editingEquipment}
-            isSubmitting={isSubmitting}
-            isEditing={!!editingEquipment}
-          />
-        </DialogContent>
-      </Dialog>
+                              </TableHeader>
+                              <TableBody>
+                                  {parsedData.map((equip, index) => (
+                                      <TableRow key={index}>
+                                          <TableCell>{equip.originalRow.brand || '---'}</TableCell>
+                                          <TableCell>{equip.originalRow.serialNumber || '---'}</TableCell>
+                                          <TableCell>{equip.originalRow.type || '---'}</TableCell>
+                                          <TableCell>
+                                              {equip.errors ? (
+                                                <TooltipProvider>
+                                                  <Tooltip>
+                                                    <TooltipTrigger>
+                                                      <Badge variant="destructive">Inválido</Badge>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                      <ul className="list-disc list-inside text-sm">
+                                                        {equip.errors.map(e => <li key={e.path.join('.')}>{e.message}</li>)}
+                                                      </ul>
+                                                    </TooltipContent>
+                                                  </Tooltip>
+                                                </TooltipProvider>
+                                              ) : (
+                                                  <Badge className="bg-green-500 hover:bg-green-600">Válido</Badge>
+                                              )}
+                                          </TableCell>
+                                      </TableRow>
+                                  ))}
+                              </TableBody>
+                          </Table>
+                      </ScrollArea>
+                  )}
+                  <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>Cancelar</Button>
+                      <Button onClick={handleImportConfirm} disabled={isImporting || parsedData.filter(p => !p.errors).length === 0}>
+                          {isImporting ? "Importando..." : `Importar ${parsedData.filter(p => !p.errors).length} Válidos`}
+                      </Button>
+                  </DialogFooter>
+              </DialogContent>
+          </Dialog>
+          <Dialog open={isFormDialogOpen} onOpenChange={(open) => { setIsFormDialogOpen(open); if(!open) setEditingEquipment(undefined); }}>
+            <DialogTrigger asChild>
+              <Button onClick={openAddDialog}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Equipamento
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>{editingEquipment ? 'Editar Equipamento' : 'Adicionar Novo Equipamento'}</DialogTitle>
+              </DialogHeader>
+              <EquipmentForm 
+                onSubmit={handleFormSubmit} 
+                defaultValues={editingEquipment}
+                isSubmitting={isSubmitting}
+                isEditing={!!editingEquipment}
+              />
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
     </div>
-  ) : null;
+  );
 
   return (
     <TooltipProvider>
+      <h1 className="text-3xl font-bold text-center mb-6 hidden print:block">
+          Lista de Equipamentos
+      </h1>
       <PageHeader
         title="Gerenciamento de Equipamentos"
         description="Cadastre, visualize e edite os equipamentos."
         icon={PackageSearch}
         actions={pageActions}
+        className="print:hidden"
       />
       
-      {equipments.length === 0 ? (
-        <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed border-border rounded-lg">
+      {sortedEquipments.length === 0 ? (
+        <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed border-border rounded-lg print:hidden">
             <PackageSearch className="h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold text-foreground mb-2">Nenhum equipamento cadastrado</h3>
             <p className="text-muted-foreground mb-4">Comece adicionando novos equipamentos ao sistema.</p>
@@ -377,7 +402,7 @@ export default function EquipamentosPage() {
       ) : (
         <>
           {canManageEquipments && selectedEquipmentIds.length > 0 && (
-             <div className="mb-4 flex items-center justify-between gap-4 p-4 border rounded-lg bg-card shadow-sm">
+             <div className="mb-4 flex items-center justify-between gap-4 p-4 border rounded-lg bg-card shadow-sm print:hidden">
                 <div className="flex items-center gap-4">
                   <span className="text-sm font-medium text-foreground">{selectedEquipmentIds.length} selecionado(s)</span>
                 </div>
@@ -386,12 +411,12 @@ export default function EquipamentosPage() {
                 </Button>
             </div>
           )}
-          <Card>
+          <Card className="print:shadow-none print:border-none">
             <Table>
               <TableHeader>
                 <TableRow>
                   {canManageEquipments && (
-                    <TableHead className="w-[50px]">
+                    <TableHead className="w-[50px] print:hidden">
                       <Checkbox
                           id="select-all-equipments"
                           checked={allDeletableSelected}
@@ -406,17 +431,17 @@ export default function EquipamentosPage() {
                   <TableHead>Patrimônio</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Observações</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="text-right print:hidden">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {equipments.map((equipment) => (
+                {sortedEquipments.map((equipment) => (
                   <TableRow 
                     key={equipment.id}
                     data-state={selectedEquipmentIds.includes(equipment.id) ? 'selected' : 'unselected'}
                   >
                     {canManageEquipments && (
-                       <TableCell>
+                       <TableCell className="print:hidden">
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -443,7 +468,7 @@ export default function EquipamentosPage() {
                     <TableCell>{equipment.brand}{equipment.model ? ` ${equipment.model}` : ''}</TableCell>
                     <TableCell>{equipment.serialNumber}</TableCell>
                     <TableCell>
-                      <Badge className={`px-2 py-0.5 text-xs rounded-full ${
+                      <Badge className={`px-2 py-0.5 text-xs rounded-full badge-print ${
                         equipment.status === 'Disponível' ? 'bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100' :
                         equipment.status === 'Em Cautela' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100' :
                         equipment.status === 'Manutenção' ? 'bg-orange-100 text-orange-700 dark:bg-orange-700 dark:text-orange-100' :
@@ -453,7 +478,7 @@ export default function EquipamentosPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground truncate max-w-xs">{equipment.observations}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right print:hidden">
                        <div className="flex justify-end space-x-1">
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -644,5 +669,3 @@ export default function EquipamentosPage() {
     </TooltipProvider>
   );
 }
-
-    

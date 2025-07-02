@@ -1,269 +1,80 @@
 @media print {
-  /* Universal reset for print - ensures no unwanted backgrounds/colors */
-  * {
-    background-color: transparent !important;
+  body {
+    background-color: white !important;
     color: black !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
+    font-size: 10pt;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  html, body {
-    background-color: white !important; /* Ensure main page background is white */
-    width: 100%;
-    height: auto;
-    margin: 0;
-    padding: 0;
-  }
-
-  /* Hide elements not intended for print */
-  .print\:hidden,
-  .dialog-header-non-print,
+  /* Hide elements not meant for printing */
+  .print-hidden,
+  header,
+  aside,
+  [data-sidebar="sidebar"],
+  [data-sidebar="trigger"],
   .dialog-footer-non-print,
-  .sidebar-wrapper, /* Assuming this class for the main sidebar container */
-  header /* Assuming this for the main page header */ {
+  .dialog-header-non-print {
     display: none !important;
   }
-  
-  /* Ensure print-specific titles are visible and styled */
-  .page-header-print-title,
-  .print-only-equipment-title,
-  .print-only-officer-title {
-    display: block !important;
-    font-size: 16pt;
-    font-weight: bold;
-    text-align: center;
-    margin-top: 0; /* Start at the top of the page */
-    margin-bottom: 20px;
-  }
-  
-  /* Dialog content containers for details pages */
-  #equipment-details-dialog-content,
-  #officer-details-dialog-content {
-    display: block !important;
-    position: static !important; /* Override fixed positioning */
-    width: 100% !important;
-    max-width: 100% !important;
-    height: auto !important;
-    overflow: visible !important;
+
+  main {
     padding: 0 !important;
     margin: 0 !important;
+    overflow: visible !important;
+    width: 100%;
+    background-color: white !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
+
+  /* Reset card styles for printing */
+  .card-print-reset {
     border: none !important;
     box-shadow: none !important;
-    background-color: white !important;
-    page-break-before: auto; /* Changed from always to auto */
-    page-break-after: auto;
+    padding: 0 !important;
+    background-color: transparent !important;
   }
 
-  /* Headings for "Informações Gerais/Pessoais" and "Histórico de Cautelas" */
-  .equipment-general-info-non-print h3,
-  .officer-personal-info-non-print h3,
-  .equipment-loan-history-section-print h3,
-  .officer-loan-history-section-print h3 {
-    font-size: 12pt;
-    font-weight: bold;
-    margin-top: 15px;
-    margin-bottom: 8px;
-    page-break-after: avoid;
+  table {
+    width: 100%;
+    border-collapse: collapse !important;
+    font-size: 9pt;
   }
 
-  /* Styling for the "Informações Gerais/Pessoais" sections */
-  .equipment-general-info-non-print > div,
-  .officer-personal-info-non-print > div {
-    font-size: 10pt;
+  th,
+  td {
+    border: 1px solid #ccc !important;
+    padding: 6px !important;
+    text-align: left !important;
   }
 
-  .equipment-general-info-non-print div.grid,
-  .officer-personal-info-non-print div.grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 2px 1rem; /* row-gap column-gap */
+  th {
+    background-color: #f2f2f2 !important;
+    font-weight: bold !important;
   }
-
-  .equipment-general-info-non-print div div, /* Targets the individual info lines */
-  .officer-personal-info-non-print div p {
-    margin-bottom: 4px; /* Space between lines */
-    page-break-inside: avoid;
-  }
-
-  .equipment-general-info-non-print div div strong,
-  .officer-personal-info-non-print div p strong {
-    font-weight: bold;
+  
+  /* Ensure badge colors are visible when printing */
+  .badge-print {
+    border: 1px solid #ccc !important;
+    background-color: white !important; /* Default for printing */
     color: black !important;
   }
-  
-  /* "Observações" and "Cadastrado em" to span full width if they were md:col-span-2 */
-  .equipment-general-info-non-print div [class*="md:col-span-2"],
-  .officer-personal-info-non-print div [class*="md:col-span-2"] {
-      grid-column: span 2 / span 2;
+
+  /* Specific badge styles for printing */
+  .print-badge-entregue {
+    background-color: #fef9c3 !important; /* yellow-100 */
+    color: #b45309 !important; /* yellow-700 */
+    border: 1px solid #fde68a !important; /* yellow-200 */
   }
 
-  .equipment-general-info-non-print div div.text-xs, /* Cadastrado em */
-  .officer-personal-info-non-print div p.text-xs {   /* Cadastrado em */
-    font-size: 8pt;
-    color: #555 !important;
-    margin-top: 8px;
+  .print-badge-devolvido {
+    background-color: #dcfce7 !important; /* green-100 */
+    color: #15803d !important; /* green-700 */
+    border: 1px solid #bbf7d0 !important; /* green-200 */
   }
 
-  /* Status Badge in equipment general info */
-  .equipment-general-info-non-print .badge {
-    background-color: #e6ffe6 !important; /* Light green for 'Disponível' */
-    color: #006400 !important; /* Dark green text */
-    border: 1px solid #adebad !important;
-    padding: 1px 5px;
-    font-size: 9pt;
-    border-radius: 3px;
-    font-weight: normal;
-    display: inline-block;
-  }
-
-  /* Loan History Table Styling */
-  .equipment-loan-history-section-print table,
-  .officer-loan-history-section-print table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 5px;
-  }
-
-  .equipment-loan-history-section-print th,
-  .officer-loan-history-section-print th {
-    font-weight: bold;
-    text-align: left;
-    padding: 6px 4px;
-    font-size: 10pt;
-    border-bottom: 1px solid #333; /* Darker border for header */
-  }
-
-  .equipment-loan-history-section-print td,
-  .officer-loan-history-section-print td {
-    border-bottom: 1px solid #ccc; /* Light gray border for rows */
-    padding: 6px 4px;
-    text-align: left;
-    font-size: 9pt;
-  }
-  
-  .equipment-loan-history-section-print tr:last-child td,
-  .officer-loan-history-section-print tr:last-child td {
-    border-bottom: none;
-  }
-
-  /* Status Badges in tables */
-  .equipment-loan-history-section-print .badge,
-  .officer-loan-history-section-print .badge {
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 8pt;
-    font-weight: normal; /* Normal weight for badge text */
-    display: inline-block;
-    text-align: center;
-    min-width: 60px; /* Ensure badges have some width */
-  }
-
-  .print-badge-entregue { /* For 'Entregue' status */
-    background-color: #fff8e1 !important; /* Light yellow */
-    color: #795548 !important; /* Brownish text */
-    border: 1px solid #ffecb3 !important;
-  }
-
-  .print-badge-devolvido { /* For 'Devolvido' status */
-    background-color: #e6ffe6 !important; /* Light green */
-    color: #006400 !important; /* Dark green text */
-    border: 1px solid #b3ffb3 !important;
-  }
-  
-  /* Officer loan history equipment list items */
-  .officer-loan-history-section-print ul {
-    list-style-type: none;
-    padding-left: 0;
-    margin: 0;
-  }
-  .officer-loan-history-section-print ul li {
-    font-size: 8pt;
-    margin-bottom: 1px;
-  }
-
-  /* Relatório de Cautelas (general report page) print styles */
-  .loan-print-item {
-    border: 1px solid #ccc;
-    padding: 10px;
-    margin-bottom: 10px;
-    page-break-inside: avoid; /* Avoid breaking items across columns/pages */
-    font-size: 9pt; /* Base font size for items */
-  }
-
-  .print-columns-container {
-    column-count: 2;
-    column-gap: 20px;
-    orphans: 3; /* Minimum lines at bottom of a column */
-    widows: 3;  /* Minimum lines at top of a column */
-  }
-  
-  .loan-print-item p, .loan-print-item ul {
-    margin-bottom: 4px;
-  }
-  .loan-print-item .print-label {
-    font-weight: bold;
-  }
-  .loan-print-item .print-value {
-    font-weight: normal;
-  }
-  .loan-print-item .print-officer-name {
-    font-size: 10pt;
-    margin-bottom: 6px;
-  }
-  .loan-print-item .print-equipment-list {
-    list-style-type: disc;
-    list-style-position: inside;
-    padding-left: 0px; /* No extra indent for list */
-    margin-top: 2px;
-  }
-  .loan-print-item .print-equipment-list li {
-    margin-left: 0;
-  }
-
-  .loan-print-item .print-status-line {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 6px;
-  }
-  .loan-print-item .print-status-line p:first-child { /* Label */
-    font-weight: bold;
-  }
-   .loan-print-item .print-status-line p:last-child .print-value { /* Status value */
-    padding: 1px 5px;
-    border-radius: 3px;
-    font-size: 8pt;
-  }
-
-  .loan-print-item .print-status-line .print-badge-entregue-text {
-    background-color: #fff8e1 !important;
-    color: #795548 !important;
-    border: 1px solid #ffecb3 !important;
-  }
-  .loan-print-item .print-status-line .print-badge-devolvido-text {
-    background-color: #e6ffe6 !important;
-    color: #006400 !important;
-    border: 1px solid #b3ffb3 !important;
-  }
-
-  /* Ensure general page elements don't interfere */
-  body > div:not(#equipment-details-dialog-content):not(#officer-details-dialog-content) {
-     /* This is an attempt to hide other elements if dialogs are directly under body,
-        might need to be more specific if there's a main app wrapper */
-  }
-  /* If the dialogs are not direct children of body, this won't work as intended.
-     It's better to rely on specific IDs/classes of the content to print. */
-
-  /* For scroll areas - ensure they don't restrict content height in print */
-  .max-h-\[calc\(70vh-220px\)\], 
-  .max-h-\[calc\(70vh-150px\)\] {
-    max-height: none !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
-  
-  /* Remove borders from table cells in print for Relatorios page specifically if desired */
-  .print-columns-container .loan-print-item td,
-  .print-columns-container .loan-print-item th {
-    /* border: none !important; /* Uncomment if no borders are desired for this specific table */
-  }
 }
