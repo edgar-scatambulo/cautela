@@ -36,19 +36,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 
 
-const EquipmentIcon = ({ type }: { type: EquipmentType }) => {
-  switch (type) {
-    case EquipmentType.CELULAR:
-      return <Smartphone className="h-6 w-6 text-primary" />;
-    case EquipmentType.IMPRESSORA:
-      return <PrinterIconLucide className="h-6 w-6 text-primary" />;
-    case EquipmentType.RADIO:
-      return <Radio className="h-6 w-6 text-primary" />;
-    default:
-      return <PackageSearch className="h-6 w-6 text-primary" />;
-  }
-};
-
 const getOfficerNameLocal = (officerId: string, officers: PoliceOfficer[]): string => {
   const officer = officers.find(o => o.id === officerId);
   return officer ? `${officer.name} (${officer.rank})` : 'Desconhecido';
@@ -61,7 +48,7 @@ type ParsedEquipment = z.infer<typeof EquipmentSchema> & {
 
 
 export default function EquipamentosPage() {
-  const { equipments, addEquipment, updateEquipment, deleteEquipment, loans, officers, currentUser, addMultipleEquipments, deleteMultipleEquipments } = useStore();
+  const { equipments, addEquipment, updateEquipment, deleteEquipment, loans, officers, currentUser, addMultipleEquipipments, deleteMultipleEquipments } = useStore();
   const { toast } = useToast();
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingEquipment, setEditingEquipment] = React.useState<Equipment | undefined>(undefined);
@@ -389,118 +376,129 @@ export default function EquipamentosPage() {
         </div>
       ) : (
         <>
-          {canManageEquipments && (
+          {canManageEquipments && selectedEquipmentIds.length > 0 && (
              <div className="mb-4 flex items-center justify-between gap-4 p-4 border rounded-lg bg-card shadow-sm">
-                <div className='flex items-center gap-2'>
-                    <Checkbox
-                        id="select-all-equipments"
-                        checked={allDeletableSelected}
-                        onCheckedChange={handleSelectAll}
-                        disabled={equipmentsThatCanBeDeleted.length === 0}
-                    />
-                    <Label htmlFor="select-all-equipments" className="font-medium text-sm">
-                        Selecionar Todos
-                    </Label>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-medium text-foreground">{selectedEquipmentIds.length} selecionado(s)</span>
                 </div>
-
-                {selectedEquipmentIds.length > 0 && (
-                    <div className="flex items-center gap-4">
-                        <span className="text-sm text-muted-foreground">{selectedEquipmentIds.length} selecionado(s)</span>
-                        <Button variant="destructive" size="sm" onClick={() => setIsMultiDeleteDialogOpen(true)}>
-                            <Trash2 className="mr-2 h-4 w-4" /> Excluir Selecionados
-                        </Button>
-                    </div>
-                )}
+                <Button variant="destructive" size="sm" onClick={() => setIsMultiDeleteDialogOpen(true)}>
+                    <Trash2 className="mr-2 h-4 w-4" /> Excluir Selecionados
+                </Button>
             </div>
           )}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {equipments.map((equipment) => (
-              <Card key={equipment.id} className={cn("flex flex-col transition-shadow duration-200", selectedEquipmentIds.includes(equipment.id) && "ring-2 ring-primary border-primary")}>
-                <CardHeader>
-                  <div className="flex items-start justify-between mb-2">
-                    <EquipmentIcon type={equipment.type} />
-                     <div className="flex items-center gap-2">
-                        <Badge className={`px-2 py-0.5 text-xs rounded-full ${
-                          equipment.status === 'Disponível' ? 'bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100' :
-                          equipment.status === 'Em Cautela' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100' :
-                          equipment.status === 'Manutenção' ? 'bg-orange-100 text-orange-700 dark:bg-orange-700 dark:text-orange-100' :
-                          'bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100'
-                        }`}>
-                          {equipment.status}
-                        </Badge>
-                        {canManageEquipments && (
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span tabIndex={equipment.status === 'Em Cautela' ? 0 : undefined}>
-                                      <Checkbox
-                                          id={`select-${equipment.id}`}
-                                          checked={selectedEquipmentIds.includes(equipment.id)}
-                                          onCheckedChange={(checked) => handleSelectEquipment(equipment.id, !!checked)}
-                                          disabled={equipment.status === 'Em Cautela'}
-                                          aria-label={`Selecionar ${equipment.brand}`}
-                                      />
-                                  </span>
-                                </TooltipTrigger>
-                                {equipment.status === 'Em Cautela' && (
-                                    <TooltipContent>
-                                        <p>Não pode ser excluído pois está em uma cautela ativa.</p>
-                                    </TooltipContent>
-                                )}
-                            </Tooltip>
-                        )}
-                    </div>
-                  </div>
-                  <CardTitle className="text-lg font-semibold font-headline">{equipment.brand}{equipment.model ? ` ${equipment.model}` : ''}</CardTitle>
-                  <CardDescription>Tipo: {equipment.type}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  <p className="text-sm text-muted-foreground">Patrimônio: <span className="font-medium text-foreground">{equipment.serialNumber}</span></p>
-                  {equipment.observations && <p className="text-sm text-muted-foreground mt-2">Obs: {equipment.observations}</p>}
-                </CardContent>
-                <CardFooter className="border-t pt-4">
-                  <div className="flex w-full justify-end space-x-2">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={() => openDetailsDialog(equipment)} className="text-primary hover:bg-primary/10">
-                          <Eye className="h-4 w-4" />
-                          <span className="sr-only">Ver Detalhes</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Ver Detalhes</p>
-                      </TooltipContent>
-                    </Tooltip>
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {canManageEquipments && (
+                    <TableHead className="w-[50px]">
+                      <Checkbox
+                          id="select-all-equipments"
+                          checked={allDeletableSelected}
+                          onCheckedChange={handleSelectAll}
+                          disabled={equipmentsThatCanBeDeleted.length === 0}
+                          aria-label="Selecionar todos os equipamentos deletáveis"
+                      />
+                    </TableHead>
+                  )}
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Marca / Modelo</TableHead>
+                  <TableHead>Patrimônio</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Observações</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {equipments.map((equipment) => (
+                  <TableRow 
+                    key={equipment.id}
+                    data-state={selectedEquipmentIds.includes(equipment.id) ? 'selected' : 'unselected'}
+                  >
                     {canManageEquipments && (
-                      <>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={() => openEditDialog(equipment)}>
-                              <Edit3 className="h-4 w-4" />
-                              <span className="sr-only">Editar</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Editar</p>
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="destructive" size="icon" onClick={() => openDeleteDialog(equipment)}>
-                              <Trash2 className="h-4 w-4" />
-                              <span className="sr-only">Excluir</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Excluir</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </>
+                       <TableCell>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span tabIndex={equipment.status === 'Em Cautela' ? 0 : undefined}>
+                                  <Checkbox
+                                      id={`select-${equipment.id}`}
+                                      checked={selectedEquipmentIds.includes(equipment.id)}
+                                      onCheckedChange={(checked) => handleSelectEquipment(equipment.id, !!checked)}
+                                      disabled={equipment.status === 'Em Cautela'}
+                                      aria-label={`Selecionar ${equipment.brand}`}
+                                  />
+                                </span>
+                              </TooltipTrigger>
+                              {equipment.status === 'Em Cautela' && (
+                                  <TooltipContent>
+                                      <p>Não pode ser excluído pois está em uma cautela ativa.</p>
+                                  </TooltipContent>
+                              )}
+                            </Tooltip>
+                          </TooltipProvider>
+                       </TableCell>
                     )}
-                  </div>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
+                    <TableCell className="font-medium">{equipment.type}</TableCell>
+                    <TableCell>{equipment.brand}{equipment.model ? ` ${equipment.model}` : ''}</TableCell>
+                    <TableCell>{equipment.serialNumber}</TableCell>
+                    <TableCell>
+                      <Badge className={`px-2 py-0.5 text-xs rounded-full ${
+                        equipment.status === 'Disponível' ? 'bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100' :
+                        equipment.status === 'Em Cautela' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100' :
+                        equipment.status === 'Manutenção' ? 'bg-orange-100 text-orange-700 dark:bg-orange-700 dark:text-orange-100' :
+                        'bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100'
+                      }`}>
+                        {equipment.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground truncate max-w-xs">{equipment.observations}</TableCell>
+                    <TableCell className="text-right">
+                       <div className="flex justify-end space-x-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" onClick={() => openDetailsDialog(equipment)} className="text-primary hover:bg-primary/10">
+                                <Eye className="h-4 w-4" />
+                                <span className="sr-only">Ver Detalhes</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Ver Detalhes</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          {canManageEquipments && (
+                            <>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="outline" size="icon" onClick={() => openEditDialog(equipment)}>
+                                    <Edit3 className="h-4 w-4" />
+                                    <span className="sr-only">Editar</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Editar</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="destructive" size="icon" onClick={() => openDeleteDialog(equipment)} disabled={equipment.status === 'Em Cautela'}>
+                                    <Trash2 className="h-4 w-4" />
+                                    <span className="sr-only">Excluir</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    {equipment.status === 'Em Cautela' ? <p>Não pode ser excluído (em cautela)</p> : <p>Excluir</p>}
+                                </TooltipContent>
+                              </Tooltip>
+                            </>
+                          )}
+                        </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
 
@@ -646,3 +644,5 @@ export default function EquipamentosPage() {
     </TooltipProvider>
   );
 }
+
+    
