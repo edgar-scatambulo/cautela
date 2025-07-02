@@ -64,6 +64,7 @@ interface AppState {
   addMultipleEquipments: (equipmentsData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>[]) => Promise<void>;
   updateEquipment: (equipment: Equipment) => Promise<void>;
   deleteEquipment: (equipmentId: string) => Promise<void>;
+  deleteMultipleEquipments: (equipmentIds: string[]) => Promise<void>;
 
   // Officer Actions
   addOfficer: (officerData: Omit<PoliceOfficer, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
@@ -354,6 +355,45 @@ export const useStore = create<AppState>((set, get) => ({
     }
     await deleteDoc(doc(db, 'equipments', equipmentId));
   },
+  
+  deleteMultipleEquipments: async (equipmentIds) => {
+    if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
+    if (equipmentIds.length === 0) return;
+
+    const loansQuery = query(
+        collection(db, 'loans'),
+        where('equipmentIds', 'array-contains-any', equipmentIds),
+        where('status', '==', LoanStatus.ENTREGUE)
+    );
+    const loansSnap = await getDocs(loansQuery);
+
+    if (!loansSnap.empty) {
+        const activeLoanEquipmentIds = new Set<string>();
+        loansSnap.docs.forEach(loanDoc => {
+            loanDoc.data().equipmentIds.forEach((id: string) => {
+                if (equipmentIds.includes(id)) {
+                    activeLoanEquipmentIds.add(id);
+                }
+            });
+        });
+
+        if (activeLoanEquipmentIds.size > 0) {
+            const problematicEquipments = get().equipments
+                .filter(e => activeLoanEquipmentIds.has(e.id))
+                .map(e => `${e.brand} (${e.serialNumber})`);
+            
+            throw new Error(`Exclusão falhou. Os seguintes equipamentos estão em cautelas ativas: ${problematicEquipments.join(', ')}`);
+        }
+    }
+    
+    const batch = writeBatch(db);
+    equipmentIds.forEach(id => {
+        const equipDocRef = doc(db, 'equipments', id);
+        batch.delete(equipDocRef);
+    });
+
+    await batch.commit();
+  },
 
   addOfficer: async (officerData) => {
     if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
@@ -466,5 +506,3 @@ export const useStore = create<AppState>((set, get) => ({
 export const AppStateProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   return children;
 };
-
-    

@@ -5,7 +5,7 @@ import * as React from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as ShadDialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as ShadDialogDescription, DialogFooter } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +32,8 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Papa from 'papaparse';
+import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 
 
 const EquipmentIcon = ({ type }: { type: EquipmentType }) => {
@@ -59,7 +61,7 @@ type ParsedEquipment = z.infer<typeof EquipmentSchema> & {
 
 
 export default function EquipamentosPage() {
-  const { equipments, addEquipment, updateEquipment, deleteEquipment, loans, officers, currentUser, addMultipleEquipments } = useStore();
+  const { equipments, addEquipment, updateEquipment, deleteEquipment, loans, officers, currentUser, addMultipleEquipments, deleteMultipleEquipments } = useStore();
   const { toast } = useToast();
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingEquipment, setEditingEquipment] = React.useState<Equipment | undefined>(undefined);
@@ -75,6 +77,9 @@ export default function EquipamentosPage() {
   const [isImportDialogOpen, setIsImportDialogOpen] = React.useState(false);
   const [isImporting, setIsImporting] = React.useState(false);
   const [parsedData, setParsedData] = React.useState<ParsedEquipment[]>([]);
+  
+  const [selectedEquipmentIds, setSelectedEquipmentIds] = React.useState<string[]>([]);
+  const [isMultiDeleteDialogOpen, setIsMultiDeleteDialogOpen] = React.useState(false);
 
 
   const handleFormSubmit = async (values: z.infer<typeof EquipmentSchema>) => {
@@ -132,6 +137,22 @@ export default function EquipamentosPage() {
       }
     }
   };
+  
+  const handleConfirmMultiDelete = async () => {
+    if (selectedEquipmentIds.length === 0) return;
+    setIsSubmitting(true);
+    try {
+        await deleteMultipleEquipments(selectedEquipmentIds);
+        toast({ title: "Equipamentos Excluídos", description: `${selectedEquipmentIds.length} equipamentos foram excluídos com sucesso.` });
+        setSelectedEquipmentIds([]);
+    } catch (error: any) {
+        toast({ title: "Erro ao Excluir", description: error.message, variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
+        setIsMultiDeleteDialogOpen(false);
+    }
+  };
+
 
   const openDetailsDialog = (equipment: Equipment) => {
     setSelectedEquipmentForDetails(equipment);
@@ -236,6 +257,24 @@ export default function EquipamentosPage() {
 
 
   const canManageEquipments = currentUser?.role === UserRole.ADMIN;
+  
+  const handleSelectEquipment = (equipmentId: string, checked: boolean) => {
+    setSelectedEquipmentIds(prev =>
+        checked ? [...prev, equipmentId] : prev.filter(id => id !== equipmentId)
+    );
+  };
+  
+  const equipmentsThatCanBeDeleted = equipments.filter(e => e.status !== 'Em Cautela');
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+        setSelectedEquipmentIds(equipmentsThatCanBeDeleted.map(e => e.id));
+    } else {
+        setSelectedEquipmentIds([]);
+    }
+  };
+  
+  const allDeletableSelected = equipmentsThatCanBeDeleted.length > 0 && selectedEquipmentIds.length > 0 && equipmentsThatCanBeDeleted.every(e => selectedEquipmentIds.includes(e.id));
   
   const pageActions = canManageEquipments ? (
     <div className="flex gap-2">
@@ -349,72 +388,120 @@ export default function EquipamentosPage() {
             )}
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {equipments.map((equipment) => (
-            <Card key={equipment.id} className="flex flex-col">
-              <CardHeader>
-                <div className="flex items-center justify-between mb-2">
-                  <EquipmentIcon type={equipment.type} />
-                  <Badge className={`px-2 py-0.5 text-xs rounded-full ${
-                    equipment.status === 'Disponível' ? 'bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100' :
-                    equipment.status === 'Em Cautela' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100' :
-                    equipment.status === 'Manutenção' ? 'bg-orange-100 text-orange-700 dark:bg-orange-700 dark:text-orange-100' :
-                    'bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100'
-                  }`}>
-                    {equipment.status}
-                  </Badge>
+        <>
+          {canManageEquipments && (
+             <div className="mb-4 flex items-center justify-between gap-4 p-4 border rounded-lg bg-card shadow-sm">
+                <div className='flex items-center gap-2'>
+                    <Checkbox
+                        id="select-all-equipments"
+                        checked={allDeletableSelected}
+                        onCheckedChange={handleSelectAll}
+                        disabled={equipmentsThatCanBeDeleted.length === 0}
+                    />
+                    <Label htmlFor="select-all-equipments" className="font-medium text-sm">
+                        Selecionar Todos
+                    </Label>
                 </div>
-                <CardTitle className="text-lg font-semibold font-headline">{equipment.brand}{equipment.model ? ` ${equipment.model}` : ''}</CardTitle>
-                <CardDescription>Tipo: {equipment.type}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-sm text-muted-foreground">Patrimônio: <span className="font-medium text-foreground">{equipment.serialNumber}</span></p>
-                {equipment.observations && <p className="text-sm text-muted-foreground mt-2">Obs: {equipment.observations}</p>}
-              </CardContent>
-              <CardFooter className="border-t pt-4">
-                <div className="flex w-full justify-end space-x-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" onClick={() => openDetailsDialog(equipment)} className="text-primary hover:bg-primary/10">
-                        <Eye className="h-4 w-4" />
-                        <span className="sr-only">Ver Detalhes</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Ver Detalhes</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  {canManageEquipments && (
-                    <>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="outline" size="icon" onClick={() => openEditDialog(equipment)}>
-                            <Edit3 className="h-4 w-4" />
-                            <span className="sr-only">Editar</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Editar</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="destructive" size="icon" onClick={() => openDeleteDialog(equipment)}>
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Excluir</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Excluir</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </>
-                  )}
-                </div>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+
+                {selectedEquipmentIds.length > 0 && (
+                    <div className="flex items-center gap-4">
+                        <span className="text-sm text-muted-foreground">{selectedEquipmentIds.length} selecionado(s)</span>
+                        <Button variant="destructive" size="sm" onClick={() => setIsMultiDeleteDialogOpen(true)}>
+                            <Trash2 className="mr-2 h-4 w-4" /> Excluir Selecionados
+                        </Button>
+                    </div>
+                )}
+            </div>
+          )}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {equipments.map((equipment) => (
+              <Card key={equipment.id} className={cn("flex flex-col transition-shadow duration-200", selectedEquipmentIds.includes(equipment.id) && "ring-2 ring-primary border-primary")}>
+                <CardHeader>
+                  <div className="flex items-start justify-between mb-2">
+                    <EquipmentIcon type={equipment.type} />
+                     <div className="flex items-center gap-2">
+                        <Badge className={`px-2 py-0.5 text-xs rounded-full ${
+                          equipment.status === 'Disponível' ? 'bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100' :
+                          equipment.status === 'Em Cautela' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100' :
+                          equipment.status === 'Manutenção' ? 'bg-orange-100 text-orange-700 dark:bg-orange-700 dark:text-orange-100' :
+                          'bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100'
+                        }`}>
+                          {equipment.status}
+                        </Badge>
+                        {canManageEquipments && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span tabIndex={equipment.status === 'Em Cautela' ? 0 : undefined}>
+                                      <Checkbox
+                                          id={`select-${equipment.id}`}
+                                          checked={selectedEquipmentIds.includes(equipment.id)}
+                                          onCheckedChange={(checked) => handleSelectEquipment(equipment.id, !!checked)}
+                                          disabled={equipment.status === 'Em Cautela'}
+                                          aria-label={`Selecionar ${equipment.brand}`}
+                                      />
+                                  </span>
+                                </TooltipTrigger>
+                                {equipment.status === 'Em Cautela' && (
+                                    <TooltipContent>
+                                        <p>Não pode ser excluído pois está em uma cautela ativa.</p>
+                                    </TooltipContent>
+                                )}
+                            </Tooltip>
+                        )}
+                    </div>
+                  </div>
+                  <CardTitle className="text-lg font-semibold font-headline">{equipment.brand}{equipment.model ? ` ${equipment.model}` : ''}</CardTitle>
+                  <CardDescription>Tipo: {equipment.type}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  <p className="text-sm text-muted-foreground">Patrimônio: <span className="font-medium text-foreground">{equipment.serialNumber}</span></p>
+                  {equipment.observations && <p className="text-sm text-muted-foreground mt-2">Obs: {equipment.observations}</p>}
+                </CardContent>
+                <CardFooter className="border-t pt-4">
+                  <div className="flex w-full justify-end space-x-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={() => openDetailsDialog(equipment)} className="text-primary hover:bg-primary/10">
+                          <Eye className="h-4 w-4" />
+                          <span className="sr-only">Ver Detalhes</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Ver Detalhes</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    {canManageEquipments && (
+                      <>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="outline" size="icon" onClick={() => openEditDialog(equipment)}>
+                              <Edit3 className="h-4 w-4" />
+                              <span className="sr-only">Editar</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Editar</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="destructive" size="icon" onClick={() => openDeleteDialog(equipment)}>
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only">Excluir</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Excluir</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </>
+                    )}
+                  </div>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        </>
       )}
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -429,6 +516,34 @@ export default function EquipamentosPage() {
             <AlertDialogCancel onClick={() => setEquipmentToDelete(null)}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDelete} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">
                 {isSubmitting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isMultiDeleteDialogOpen} onOpenChange={setIsMultiDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão Múltipla</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir os {selectedEquipmentIds.length} equipamentos selecionados? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <ScrollArea className="max-h-60 rounded-md border">
+              <div className="p-4">
+                  <h4 className="mb-2 font-medium text-sm text-foreground">Itens a serem excluídos:</h4>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                      {equipments
+                          .filter(e => selectedEquipmentIds.includes(e.id))
+                          .map(e => <li key={e.id}>{e.brand} ({e.serialNumber})</li>)
+                      }
+                  </ul>
+              </div>
+          </ScrollArea>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsMultiDeleteDialogOpen(false)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmMultiDelete} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">
+              {isSubmitting ? "Excluindo..." : "Confirmar Exclusão"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -531,5 +646,3 @@ export default function EquipamentosPage() {
     </TooltipProvider>
   );
 }
-
-    
