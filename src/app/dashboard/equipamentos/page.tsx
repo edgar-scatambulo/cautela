@@ -34,6 +34,7 @@ import { Label } from '@/components/ui/label';
 import Papa from 'papaparse';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 const getOfficerNameLocal = (officerId: string, officers: PoliceOfficer[]): string => {
@@ -68,9 +69,12 @@ export default function EquipamentosPage() {
   const [selectedEquipmentIds, setSelectedEquipmentIds] = React.useState<string[]>([]);
   const [isMultiDeleteDialogOpen, setIsMultiDeleteDialogOpen] = React.useState(false);
   const [sortedEquipments, setSortedEquipments] = React.useState<Equipment[]>([]);
+  const [typeFilter, setTypeFilter] = React.useState<string>('all');
 
   React.useEffect(() => {
-    const sorted = [...equipments].sort((a, b) => {
+    const filtered = equipments.filter(equipment => typeFilter === 'all' || equipment.type === typeFilter);
+
+    const sorted = [...filtered].sort((a, b) => {
       const typeComparison = a.type.localeCompare(b.type);
       if (typeComparison !== 0) {
         return typeComparison;
@@ -78,7 +82,7 @@ export default function EquipamentosPage() {
       return a.serialNumber.localeCompare(b.serialNumber);
     });
     setSortedEquipments(sorted);
-  }, [equipments]);
+  }, [equipments, typeFilter]);
 
   const handleFormSubmit = async (values: z.infer<typeof EquipmentSchema>) => {
     setIsSubmitting(true);
@@ -388,7 +392,26 @@ export default function EquipamentosPage() {
         className="print:hidden"
       />
       
-      {sortedEquipments.length === 0 ? (
+      {equipments.length > 0 && (
+        <div className="flex items-center gap-4 mb-4 print:hidden">
+            <div className="flex items-center gap-2">
+                <Label htmlFor="type-filter">Filtrar por Tipo</Label>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger id="type-filter" className="w-[200px]">
+                        <SelectValue placeholder="Todos os Tipos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Todos os Tipos</SelectItem>
+                        {Object.values(EquipmentType).map((type) => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
+      )}
+
+      {equipments.length === 0 ? (
         <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed border-border rounded-lg print:hidden">
             <PackageSearch className="h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold text-foreground mb-2">Nenhum equipamento cadastrado</h3>
@@ -398,6 +421,12 @@ export default function EquipamentosPage() {
                 <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Primeiro Equipamento
               </Button>
             )}
+        </div>
+      ) : sortedEquipments.length === 0 ? (
+        <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed border-border rounded-lg print:hidden">
+            <PackageSearch className="h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-semibold text-foreground mb-2">Nenhum equipamento encontrado</h3>
+            <p className="text-muted-foreground">Não foram encontrados equipamentos para o filtro selecionado.</p>
         </div>
       ) : (
         <>
