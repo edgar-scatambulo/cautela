@@ -412,6 +412,36 @@ export const useStore = create<AppState>((set, get) => ({
 
   addMultipleOfficers: async (officersData) => {
     if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
+    
+    // Check for duplicates within the CSV file
+    const functionalIdsInCsv = officersData.map(o => o.functionalId);
+    const duplicateFunctionalIdsInCsv = functionalIdsInCsv.filter((item, index) => functionalIdsInCsv.indexOf(item) !== index);
+    if (duplicateFunctionalIdsInCsv.length > 0) {
+        throw new Error(`O arquivo CSV contém contatos duplicados: ${duplicateFunctionalIdsInCsv.join(', ')}`);
+    }
+
+    // Check if any of the contacts already exist in the database
+    const officersCollectionRef = collection(db, 'officers');
+    const existingFunctionalIds = new Set<string>();
+
+    // Firestore 'in' query can take up to 30 items. Chunking the array to handle larger imports.
+    const chunks: string[][] = [];
+    for (let i = 0; i < functionalIdsInCsv.length; i += 30) {
+        chunks.push(functionalIdsInCsv.slice(i, i + 30));
+    }
+
+    for (const chunk of chunks) {
+        if (chunk.length === 0) continue;
+        const existingOfficersSnapshot = await getDocs(query(officersCollectionRef, where('functionalId', 'in', chunk)));
+        existingOfficersSnapshot.docs.forEach(doc => {
+            existingFunctionalIds.add(doc.data().functionalId);
+        });
+    }
+
+    if (existingFunctionalIds.size > 0) {
+        throw new Error(`Os seguintes contatos já existem no banco de dados: ${Array.from(existingFunctionalIds).join(', ')}`);
+    }
+
     const batch = writeBatch(db);
     
     officersData.forEach(officer => {
