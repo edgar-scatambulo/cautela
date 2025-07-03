@@ -49,7 +49,7 @@ type ParsedEquipment = z.infer<typeof EquipmentSchema> & {
 
 
 export default function EquipamentosPage() {
-  const { equipments, addEquipment, updateEquipment, deleteEquipment, loans, officers, currentUser, addMultipleEquipments, deleteMultipleEquipments } = useStore();
+  const { equipments, addEquipment, updateEquipment, deleteEquipment, loans, officers, currentUser, addMultipleEquipipments, deleteMultipleEquipments } = useStore();
   const { toast } = useToast();
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingEquipment, setEditingEquipment] = React.useState<Equipment | undefined>(undefined);
@@ -70,11 +70,22 @@ export default function EquipamentosPage() {
   const [isMultiDeleteDialogOpen, setIsMultiDeleteDialogOpen] = React.useState(false);
   const [sortedEquipments, setSortedEquipments] = React.useState<Equipment[]>([]);
   const [typeFilter, setTypeFilter] = React.useState<string>('all');
+  const [statusFilter, setStatusFilter] = React.useState<string>('all');
+
+  const equipmentStatusOptions = ['Disponível', 'Em Cautela', 'Manutenção', 'Baixado'];
 
   React.useEffect(() => {
-    const filtered = equipments.filter(equipment => typeFilter === 'all' || equipment.type === typeFilter);
+    let filtered = [...equipments];
+    
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter(equipment => equipment.type === typeFilter);
+    }
+    
+    if (statusFilter !== 'all') {
+        filtered = filtered.filter(equipment => equipment.status === statusFilter);
+    }
 
-    const sorted = [...filtered].sort((a, b) => {
+    const sorted = filtered.sort((a, b) => {
       const typeComparison = a.type.localeCompare(b.type);
       if (typeComparison !== 0) {
         return typeComparison;
@@ -82,7 +93,7 @@ export default function EquipamentosPage() {
       return a.serialNumber.localeCompare(b.serialNumber);
     });
     setSortedEquipments(sorted);
-  }, [equipments, typeFilter]);
+  }, [equipments, typeFilter, statusFilter]);
 
   const handleFormSubmit = async (values: z.infer<typeof EquipmentSchema>) => {
     setIsSubmitting(true);
@@ -404,6 +415,20 @@ export default function EquipamentosPage() {
                         <SelectItem value="all">Todos os Tipos</SelectItem>
                         {Object.values(EquipmentType).map((type) => (
                             <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="flex items-center gap-2">
+                <Label htmlFor="status-filter">Filtrar por Status</Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger id="status-filter" className="w-[200px]">
+                        <SelectValue placeholder="Todos os Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Todos os Status</SelectItem>
+                        {equipmentStatusOptions.map((status) => (
+                            <SelectItem key={status} value={status}>{status}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
