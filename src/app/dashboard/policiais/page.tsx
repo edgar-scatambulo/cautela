@@ -33,6 +33,7 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Papa from 'papaparse';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const ContactDisplay = ({ contactValue }: { contactValue: string }) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -92,13 +93,19 @@ export default function PoliciaisPage() {
   const [isImportDialogOpen, setIsImportDialogOpen] = React.useState(false);
   const [isImporting, setIsImporting] = React.useState(false);
   const [parsedData, setParsedData] = React.useState<ParsedOfficer[]>([]);
+  
   const [sortedOfficers, setSortedOfficers] = React.useState<PoliceOfficer[]>([]);
+  const [rankFilter, setRankFilter] = React.useState<string>('all');
 
   React.useEffect(() => {
-    const sorted = [...officers].sort((a, b) => a.name.localeCompare(b.name));
+    const filtered = officers.filter(officer => rankFilter === 'all' || officer.rank === rankFilter);
+    const sorted = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
     setSortedOfficers(sorted);
-  }, [officers]);
+  }, [officers, rankFilter]);
 
+  const uniqueRanks = React.useMemo(() => {
+    return [...new Set(officers.map(o => o.rank))].sort((a, b) => a.localeCompare(b));
+  }, [officers]);
 
   const handleFormSubmit = async (values: z.infer<typeof PoliceOfficerSchema>) => {
     setIsSubmitting(true);
@@ -354,6 +361,25 @@ export default function PoliciaisPage() {
         icon={Shield}
         actions={pageActions}
       />
+      
+      {officers.length > 0 && (
+        <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center gap-2">
+                <Label htmlFor="rank-filter">Filtrar por Posto/Graduação</Label>
+                <Select value={rankFilter} onValueChange={setRankFilter}>
+                    <SelectTrigger id="rank-filter" className="w-[220px]">
+                        <SelectValue placeholder="Todos os Postos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Todos os Postos/Graduações</SelectItem>
+                        {uniqueRanks.map((rank) => (
+                            <SelectItem key={rank} value={rank}>{rank}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
+      )}
 
       {officers.length === 0 ? (
         <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed border-border rounded-lg">
@@ -365,6 +391,12 @@ export default function PoliciaisPage() {
                 <UserPlus className="mr-2 h-4 w-4" /> Adicionar Primeiro Policial
               </Button>
             )}
+        </div>
+      ) : sortedOfficers.length === 0 ? (
+         <div className="flex flex-col items-center justify-center text-center py-12 border-2 border-dashed border-border rounded-lg">
+            <Shield className="h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-semibold text-foreground mb-2">Nenhum policial encontrado</h3>
+            <p className="text-muted-foreground">Não foram encontrados policiais para o filtro selecionado.</p>
         </div>
       ) : (
         <Card>
