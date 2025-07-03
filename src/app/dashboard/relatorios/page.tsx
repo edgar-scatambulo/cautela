@@ -100,90 +100,83 @@ export default function RelatoriosPage() {
             <p className="text-muted-foreground">Não há cautelas que correspondam aos filtros aplicados ou nenhuma cautela foi registrada ainda.</p>
         </div>
       ) : (
-        <div className="space-y-6 print:space-y-0 print-columns-container">
+        <div className="space-y-6">
           {filteredLoans.map((loan) => {
             const loanEquipments = getLoanEquipments(loan);
             return (
-            <div key={loan.id} className="loan-print-item">
+            <div key={loan.id}>
               <Card className="print:hidden">
-                <CardHeader className="print:p-1 print:pb-0">
-                  <div className="flex items-start justify-between mb-1 print:mb-0.5">
+                <CardHeader>
+                  <div className="flex items-start justify-between mb-1">
                     <div className="flex-grow">
-                        <CardDescription className="flex items-center text-sm font-semibold text-foreground print:text-xs print:font-normal print:text-black">
-                          <User className="h-4 w-4 mr-2 text-muted-foreground print:w-3 print:h-3 print:mr-1" /> {getOfficerName(loan.officerId, officers)}
+                        <CardDescription className="flex items-center text-sm font-semibold text-foreground">
+                          <User className="h-4 w-4 mr-2 text-muted-foreground" /> {getOfficerName(loan.officerId, officers)}
                         </CardDescription>
-                        <CardDescription className="flex items-center text-sm mt-0.5 print:text-xs print:font-normal print:text-black print:mt-px">
-                          <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground print:w-3 print:h-3 print:mr-1" /> 
+                        <CardDescription className="flex items-center text-sm mt-0.5">
+                          <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" /> 
                           Cautela: {format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })} às {loan.loanTime}
                         </CardDescription>
                         {loan.status === LoanStatus.DEVOLVIDO && loan.actualReturnDate && loan.actualReturnTime && (
-                            <CardDescription className="flex items-center text-sm mt-0.5 print:text-xs print:font-normal print:text-black print:mt-px">
-                              <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground print:w-3 print:h-3 print:mr-1" /> 
+                            <CardDescription className="flex items-center text-sm mt-0.5">
+                              <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" /> 
                               Devolução: {format(parse(loan.actualReturnDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })} às {loan.actualReturnTime}
                             </CardDescription>
                           )}
                     </div>
-                    <span className={`px-2 py-0.5 text-xs rounded-full print:text-[8pt] print:px-1 print:py-0 ${
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${
                       loan.status === LoanStatus.ENTREGUE ? 
-                        'bg-yellow-100 text-yellow-700 print:bg-yellow-100 print:text-yellow-700 print-badge-entregue' :
-                        'bg-green-100 text-green-700 print:bg-green-100 print:text-green-700 print-badge-devolvido'
+                        'bg-yellow-100 text-yellow-700' :
+                        'bg-green-100 text-green-700'
                     }`}>
                       {loan.status}
                     </span>
                   </div>
                 </CardHeader>
-                <CardContent className="print:p-1 print:pt-0.5">
-                  <h4 className="font-medium text-sm text-foreground mb-1 print:text-xs print:font-semibold print:mb-0.5">Equipamentos:</h4>
-                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 print:text-xs print:list-none print:pl-0 print:space-y-0">
+                <CardContent>
+                  <h4 className="font-medium text-sm text-foreground mb-1">Equipamentos:</h4>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
                     {loanEquipments.map(eq => (
                       <li key={eq.id} className="print:mb-px">{eq.brand} ({eq.serialNumber})</li>
                     ))}
                   </ul>
                   {loan.loanObservation && (
-                    <div className="mt-2 print:mt-1">
-                      <h4 className="font-medium text-sm text-foreground print:text-xs print:font-semibold">Obs. (Cautela):</h4>
-                      <p className="text-sm text-muted-foreground print:text-xs print:font-normal">{loan.loanObservation}</p>
+                    <div className="mt-2">
+                      <h4 className="font-medium text-sm text-foreground">Obs. (Cautela):</h4>
+                      <p className="text-sm text-muted-foreground">{loan.loanObservation}</p>
                     </div>
                   )}
                   {loan.returnObservation && (
-                    <div className="mt-2 print:mt-1">
-                      <h4 className="font-medium text-sm text-foreground print:text-xs print:font-semibold">Obs. (Devolução):</h4>
-                      <p className="text-sm text-muted-foreground print:text-xs print:font-normal">{loan.returnObservation}</p>
+                    <div className="mt-2">
+                      <h4 className="font-medium text-sm text-foreground">Obs. (Devolução):</h4>
+                      <p className="text-sm text-muted-foreground">{loan.returnObservation}</p>
                     </div>
                   )}
                 </CardContent>
               </Card>
 
-              <div className="hidden print:block">
-                <div className="print-status-line">
-                  <p><span className="print-label">Status:</span></p>
-                  <p><span className="print-value">{loan.status}</span></p>
+              <div className="hidden print:block print-cautela-item">
+                <div className="flex justify-between flex-wrap text-xs mb-2">
+                  <span><strong>Status:</strong> {loan.status}</span>
+                  <span><strong>Data:</strong> {format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR })}</span>
+                  <span><strong>Policial Responsável:</strong> {getOfficerName(loan.officerId, officers)}</span>
                 </div>
-                <p><span className="print-label">Policial Responsável:</span></p>
-                <p className="print-officer-name print-value">{getOfficerName(loan.officerId, officers)}</p>
-                
-                <p><span className="print-label">Data da Cautela:</span> <span className="print-value">{format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })} às {loan.loanTime}</span></p>
-                
-                {loan.status === LoanStatus.DEVOLVIDO && loan.actualReturnDate && loan.actualReturnTime && (
-                  <p><span className="print-label">Data de Devolução:</span> <span className="print-value">{format(parse(loan.actualReturnDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })} às {loan.actualReturnTime}</span></p>
+                <div className="text-xs">
+                  <strong>Equipamentos:</strong>
+                  <ul className="list-disc list-inside pl-1">
+                      {loanEquipments.map(eq => (
+                          <li key={eq.id}>{eq.brand} ({eq.serialNumber})</li>
+                      ))}
+                  </ul>
+                </div>
+                 {loan.loanObservation && (
+                    <div className="mt-1 text-xs">
+                        <strong>Obs. (Cautela):</strong> {loan.loanObservation}
+                    </div>
                 )}
-              
-                <p className="print-label mt-1.5">Equipamentos:</p>
-                <ul className="print-equipment-list">
-                  {loanEquipments.map(eq => (
-                    <li key={eq.id} className="print-value">{eq.brand} ({eq.serialNumber})</li>
-                  ))}
-                </ul>
-              
-                {loan.loanObservation && (
-                  <div className="mt-1.5">
-                    <p><span className="print-label">Obs. (Cautela):</span> <span className="print-value">{loan.loanObservation}</span></p>
-                  </div>
-                )}
-                {loan.returnObservation && (
-                  <div className="mt-1.5">
-                    <p><span className="print-label">Obs. (Devolução):</span> <span className="print-value">{loan.returnObservation}</span></p>
-                  </div>
+                 {loan.returnObservation && (
+                    <div className="mt-1 text-xs">
+                        <strong>Obs. (Devolução):</strong> {loan.returnObservation}
+                    </div>
                 )}
               </div>
             </div>
