@@ -1,84 +1,109 @@
-
 @media print {
-  /* General print utility classes */
+  /* Don't print background colors or images */
+  body {
+    -webkit-print-color-adjust: economy;
+    print-color-adjust: economy;
+  }
+  
+  /* Hide elements that shouldn't be on the printed page */
   .print\:hidden {
     display: none !important;
   }
 
+  /* Show elements that are only for printing */
   .print\:block {
     display: block !important;
   }
-
-  /* Ensure colors are printed */
-  body {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  @page {
-    size: auto;
-    margin: 0.5in;
-  }
-
-  /* Equipment List Table */
-  .badge-print {
-    border: 1px solid #ccc;
-    background-color: transparent !important;
+  
+  /* Reset colors and backgrounds for all elements to ensure clean printing */
+  * {
+    background: transparent !important;
     color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
   }
 
-  /* Reports Page */
+  /* Style for the main title on the printed page */
   .page-header-print-title {
     display: block !important;
+    text-align: center;
+    font-size: 1.5rem; /* 24px */
+    font-weight: 700;
+    margin-bottom: 1.5rem; /* 24px */
   }
 
+  /* Style for each loan item in the report */
   .print-cautela-item {
+    padding-bottom: 1rem; /* 16px */
+    margin-bottom: 1rem; /* 16px */
+    border-bottom: 1px solid #ccc;
     page-break-inside: avoid;
-    break-inside: avoid;
-    border-bottom: 1px dashed #9ca3af; /* Tailwind gray-400 */
-    padding-bottom: 1rem;
-    margin-bottom: 1rem;
   }
   
   .print-cautela-item:last-child {
       border-bottom: none;
   }
 
-  /* Officer/Equipment History Modal */
-  .dialog-header-non-print, .dialog-footer-non-print,
-  .equipment-general-info-non-print, .officer-personal-info-non-print {
-      display: none !important;
-  }
-  
-  .print-only-officer-title, .print-only-equipment-title {
-      display: block !important;
-      font-size: 1.5rem;
-      font-weight: bold;
-      margin-bottom: 1.5rem;
-      text-align: center;
+  /* Page setup for printing */
+  @page {
+    size: auto;
+    margin: 0.5in;
   }
 
-  body.print-officer-details-active #officer-details-dialog-content,
-  body.print-equipment-details-active #equipment-details-dialog-content {
-      position: absolute;
-      left: 0;
-      top: 0;
-      display: block !important;
-      width: 100% !important;
-      max-width: none !important;
-      height: auto !important;
-      overflow: visible !important;
-      box-shadow: none !important;
-      border: none !important;
+  /* --- Specific Print Styles for Dialogs --- */
+
+  /* Print styles for officer details dialog */
+  body.print-officer-details-active {
+    visibility: hidden;
+  }
+  .print-officer-details-active #officer-details-dialog-content,
+  .print-officer-details-active #officer-details-dialog-content * {
+    visibility: visible;
+  }
+  .print-officer-details-active #officer-details-dialog-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .print-officer-details-active .dialog-header-non-print,
+  .print-officer-details-active .dialog-footer-non-print,
+  .print-officer-details-active .officer-personal-info-non-print,
+  .print-officer-details-active .print\:hidden {
+    display: none !important;
   }
 
-  .print-badge-entregue {
-    background-color: #fef9c3 !important;
-    color: #854d0e !important;
+  /* Print styles for equipment details dialog */
+  body.print-equipment-details-active {
+    visibility: hidden;
+  }
+  .print-equipment-details-active #equipment-details-dialog-content,
+  .print-equipment-details-active #equipment-details-dialog-content * {
+    visibility: visible;
+  }
+  .print-equipment-details-active #equipment-details-dialog-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .print-equipment-details-active .dialog-header-non-print,
+  .print-equipment-details-active .dialog-footer-non-print,
+  .print-equipment-details-active .equipment-general-info-non-print,
+  .print-equipment-details-active .print\:hidden {
+    display: none !important;
   }
 
+  /* Specific styles for badges inside dialogs when printing */
+  .print-badge-entregue,
   .print-badge-devolvido {
-    background-color: #dcfce7 !important;
-    color: #166534 !important;
+    background-color: transparent !important;
+    color: black !important;
+    border: 1px solid black !important;
+    padding: 1px 4px;
   }
 }

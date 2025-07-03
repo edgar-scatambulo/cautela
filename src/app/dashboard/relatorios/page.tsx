@@ -155,29 +155,37 @@ export default function RelatoriosPage() {
               </Card>
 
               <div className="hidden print:block print-cautela-item">
-                <div className="flex justify-between flex-wrap text-xs mb-2">
-                  <span><strong>Status:</strong> {loan.status}</span>
-                  <span><strong>Data:</strong> {format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR })}</span>
-                  <span><strong>Policial Responsável:</strong> {getOfficerName(loan.officerId, officers)}</span>
-                </div>
-                <div className="text-xs">
-                  <strong>Equipamentos:</strong>
-                  <ul className="list-disc list-inside pl-1">
-                      {loanEquipments.map(eq => (
-                          <li key={eq.id}>{eq.brand} ({eq.serialNumber})</li>
-                      ))}
-                  </ul>
-                </div>
-                 {loan.loanObservation && (
-                    <div className="mt-1 text-xs">
-                        <strong>Obs. (Cautela):</strong> {loan.loanObservation}
+                <div className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm">
+                    <div className="font-bold">Status:</div>
+                    <div>{loan.status}</div>
+
+                    <div className="font-bold">Data:</div>
+                    <div>{format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR })} às {loan.loanTime}</div>
+                    
+                    <div className="font-bold">Policial Responsável:</div>
+                    <div>{getOfficerName(loan.officerId, officers)}</div>
+                    
+                    <div className="font-bold self-start">Equipamentos:</div>
+                    <div>
+                        {loanEquipments.map((eq) => (
+                            <div key={eq.id}>{eq.brand} ({eq.serialNumber})</div>
+                        ))}
                     </div>
-                )}
-                 {loan.returnObservation && (
-                    <div className="mt-1 text-xs">
-                        <strong>Obs. (Devolução):</strong> {loan.returnObservation}
-                    </div>
-                )}
+                    
+                    {loan.loanObservation && (
+                        <>
+                            <div className="font-bold mt-2 self-start">Obs. (Cautela):</div>
+                            <div className="mt-2">{loan.loanObservation}</div>
+                        </>
+                    )}
+                    
+                    {loan.returnObservation && (
+                        <>
+                            <div className="font-bold mt-2 self-start">Obs. (Devolução):</div>
+                            <div className="mt-2">{loan.returnObservation}</div>
+                        </>
+                    )}
+                </div>
               </div>
             </div>
           )})}
