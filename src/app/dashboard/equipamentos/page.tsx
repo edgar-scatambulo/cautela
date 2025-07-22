@@ -49,7 +49,7 @@ type ParsedEquipment = z.infer<typeof EquipmentSchema> & {
 
 
 export default function EquipamentosPage() {
-  const { equipments, addEquipment, updateEquipment, deleteEquipment, loans, officers, currentUser, addMultipleEquipipments, deleteMultipleEquipments } = useStore();
+  const { equipments, addEquipment, updateEquipment, deleteEquipment, loans, officers, currentUser, addMultipleEquipments, deleteMultipleEquipments } = useStore();
   const { toast } = useToast();
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingEquipment, setEditingEquipment] = React.useState<Equipment | undefined>(undefined);
@@ -723,3 +723,5 @@ export default function EquipamentosPage() {
     </TooltipProvider>
   );
 }
+
+    
