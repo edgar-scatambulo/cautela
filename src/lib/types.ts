@@ -1,7 +1,9 @@
+
 export enum EquipmentType {
   CELULAR = 'Celular',
   IMPRESSORA = 'Impressora',
   RADIO = 'Rádio',
+  ARMAMENTO = 'Armamento',
 }
 
 export interface Equipment {
