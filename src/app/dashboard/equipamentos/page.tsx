@@ -73,6 +73,7 @@ export default function EquipamentosPage() {
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
 
   const equipmentStatusOptions = ['Disponível', 'Em Cautela', 'Manutenção', 'Baixado'];
+  const sortedEquipmentTypes = Object.values(EquipmentType).sort((a, b) => a.localeCompare(b));
 
   React.useEffect(() => {
     let filtered = [...equipments];
@@ -413,7 +414,7 @@ export default function EquipamentosPage() {
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">Todos os Tipos</SelectItem>
-                        {Object.values(EquipmentType).map((type) => (
+                        {sortedEquipmentTypes.map((type) => (
                             <SelectItem key={type} value={type}>{type}</SelectItem>
                         ))}
                     </SelectContent>

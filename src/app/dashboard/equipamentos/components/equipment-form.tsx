@@ -48,6 +48,7 @@ export function EquipmentForm({ onSubmit, defaultValues, isSubmitting, isEditing
   // 'Baixado' might be a final state not to be manually selected during general edit.
   // Thus, only 'Disponível' and 'Manutenção' are manually selectable.
   const statusOptions = ['Disponível', 'Manutenção'];
+  const sortedEquipmentTypes = Object.values(EquipmentType).sort((a, b) => a.localeCompare(b));
 
   return (
     <Form {...form}>
@@ -65,7 +66,7 @@ export function EquipmentForm({ onSubmit, defaultValues, isSubmitting, isEditing
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {Object.values(EquipmentType).map((type) => (
+                  {sortedEquipmentTypes.map((type) => (
                     <SelectItem key={type} value={type}>
                       {type}
                     </SelectItem>
