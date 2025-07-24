@@ -40,10 +40,9 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
-
     match /loans/{loanId} {
       allow read: if isSignedIn();
-      allow write: if isOperator();
+      allow write: if isSignedIn();
     }
   }
 }

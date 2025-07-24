@@ -485,7 +485,9 @@ export const useStore = create<AppState>((set, get) => ({
   addLoan: async (loanData) => {
     if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
     const currentUser = get().currentUser;
-    if (!currentUser) throw new Error("Usuário não autenticado para registrar cautela.");
+    if (!currentUser) {
+      throw new Error("Usuário não autenticado para registrar cautela.");
+    }
 
     const batch = writeBatch(db);
     const newLoanRef = doc(collection(db, 'loans'));
@@ -577,4 +579,5 @@ export const AppStateProvider: React.FC<{children: React.ReactNode}> = ({ childr
   return children;
 };
 
+    
     
