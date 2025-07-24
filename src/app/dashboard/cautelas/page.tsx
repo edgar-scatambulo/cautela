@@ -72,7 +72,7 @@ const ContactDisplay = ({ contactValue }: { contactValue: string }) => {
 
 
 export default function CautelasPage() {
-  const { loans, officers, equipments, addLoan, updateLoanStatus, currentUser } = useStore();
+  const { loans, officers, equipments, addLoan, updateLoanStatus, currentUser, users } = useStore();
   const { toast } = useToast();
   const searchParams = useSearchParams();
 
@@ -91,7 +91,10 @@ export default function CautelasPage() {
     let filtered = [...loans];
     if (statusFilter === LoanStatus.ENTREGUE) {
       filtered = filtered.filter(loan => loan.status === LoanStatus.ENTREGUE);
+    } else if (statusFilter === LoanStatus.DEVOLVIDO) {
+      filtered = filtered.filter(loan => loan.status === LoanStatus.DEVOLVIDO);
     }
+
     setDisplayedLoans(filtered.sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
         const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
@@ -115,7 +118,7 @@ export default function CautelasPage() {
   const handleOpenReturnDialog = (loan: Loan) => {
     setSelectedLoanForReturn(loan);
     setReturnObservation('');
-    const loanEquipments = equipments.filter(e => loan.equipmentIds.includes(e.id));
+    const loanEquipments = getLoanEquipments(loan);
     setEquipmentIdsForCurrentReturn(loanEquipments.map(e => e.id));
     setIsReturnDialogOpen(true);
   };
@@ -125,7 +128,7 @@ export default function CautelasPage() {
       setIsSubmitting(true);
       try {
         await updateLoanStatus(selectedLoanForReturn.id, LoanStatus.DEVOLVIDO, equipmentIdsForCurrentReturn, undefined, undefined, returnObservation, currentUser.id);
-        toast({ title: "Equipamento Devolvido", description: "Status da cautela atualizado para Devolvido." });
+        toast({ title: "Devolução Registrada", description: "A devolução foi registrada com sucesso." });
         setIsReturnDialogOpen(false);
         setSelectedLoanForReturn(null);
         setEquipmentIdsForCurrentReturn([]);
@@ -207,6 +210,7 @@ export default function CautelasPage() {
           {displayedLoans.map((loan) => {
             const officer = officers.find(o => o.id === loan.officerId);
             const loanEquipments = getLoanEquipments(loan);
+            const returnedByUser = loan.returnedToUserId ? users.find(u => u.id === loan.returnedToUserId) : null;
             return (
             <Card key={loan.id} className="flex flex-col">
               <CardHeader>
@@ -250,7 +254,7 @@ export default function CautelasPage() {
                 {loan.loanObservation && (
                   <div>
                     <h4 className="font-medium text-sm text-foreground mt-2">Observação (Cautela):</h4>
-                    <p className="text-sm text-muted-foreground">{loan.loanObservation}</p>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{loan.loanObservation}</p>
                   </div>
                 )}
                  {loan.status === LoanStatus.DEVOLVIDO && loan.actualReturnDate && (
@@ -259,10 +263,16 @@ export default function CautelasPage() {
                       <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" /> 
                       Devolvido em: {format(parse(loan.actualReturnDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR })} às {loan.actualReturnTime}
                     </CardDescription>
+                    {returnedByUser && (
+                       <CardDescription className="flex items-center text-sm">
+                         <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                         Recebido por: {returnedByUser.name}
+                       </CardDescription>
+                    )}
                     {loan.returnObservation && (
                        <div>
                         <h4 className="font-medium text-sm text-foreground mt-1">Observação (Devolução):</h4>
-                        <p className="text-sm text-muted-foreground">{loan.returnObservation}</p>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{loan.returnObservation}</p>
                       </div>
                     )}
                    </>
@@ -342,3 +352,5 @@ export default function CautelasPage() {
     </>
   );
 }
+
+    
