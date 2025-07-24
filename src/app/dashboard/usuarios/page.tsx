@@ -24,7 +24,7 @@ export default function UsuariosPage() {
   const [editingUser, setEditingUser] = React.useState<SystemUser | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const canManageUsers = currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.ADVANCED_USER;
+  const canManageUsers = currentUser?.role === UserRole.ADMIN;
 
   if (!canManageUsers) {
     return (

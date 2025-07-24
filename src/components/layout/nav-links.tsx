@@ -26,5 +26,5 @@ export const navLinks: NavLink[] = [
   { href: '/dashboard/policiais', label: 'Policiais', icon: IdCard }, // Changed icon to IdCard for better representation
   { href: '/dashboard/cautelas', label: 'Cautelas', icon: ClipboardList, roles: [UserRole.ADMIN, UserRole.ADVANCED_USER, UserRole.OPERATOR] },
   { href: '/dashboard/relatorios', label: 'Relatórios', icon: FileText },
-  { href: '/dashboard/usuarios', label: 'Usuários', icon: UserCog, roles: [UserRole.ADMIN, UserRole.ADVANCED_USER] },
+  { href: '/dashboard/usuarios', label: 'Usuários', icon: UserCog, roles: [UserRole.ADMIN] },
 ];
