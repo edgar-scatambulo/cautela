@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription as ShadDialogDescription } from '@/components/ui/dialog';
 import { LoanForm } from './components/loan-form';
 import { useStore } from '@/lib/store';
-import { Loan, LoanStatus, PoliceOfficer, Equipment } from '@/lib/types';
+import { Loan, LoanStatus, PoliceOfficer, Equipment, UserRole } from '@/lib/types';
 import { ClipboardList, PlusCircle, ArrowLeftFromLine, PackageSearch, User, CalendarDays, Clock, Mail, Check, ChevronsUpDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { LoanSchema } from '@/lib/schemas';
@@ -149,6 +149,8 @@ export default function CautelasPage() {
     }
   };
 
+  const canManageLoans = currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.ADVANCED_USER || currentUser?.role === UserRole.OPERATOR;
+
   return (
     <>
       <PageHeader
@@ -156,25 +158,27 @@ export default function CautelasPage() {
         description="Registre e acompanhe as cautelas de equipamentos."
         icon={ClipboardList}
         actions={
-          <Dialog open={isLoanDialogOpen} onOpenChange={setIsLoanDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <PlusCircle className="mr-2 h-4 w-4" /> Nova Cautela
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Registrar Nova Cautela</DialogTitle>
-                <ShadDialogDescription>Preencha os dados abaixo para registrar uma nova cautela de equipamento.</ShadDialogDescription>
-              </DialogHeader>
-              <LoanForm 
-                onSubmit={handleLoanFormSubmit} 
-                officers={officers}
-                availableEquipments={availableEquipments}
-                isSubmitting={isSubmitting}
-              />
-            </DialogContent>
-          </Dialog>
+          canManageLoans && (
+            <Dialog open={isLoanDialogOpen} onOpenChange={setIsLoanDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Nova Cautela
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Registrar Nova Cautela</DialogTitle>
+                  <ShadDialogDescription>Preencha os dados abaixo para registrar uma nova cautela de equipamento.</ShadDialogDescription>
+                </DialogHeader>
+                <LoanForm 
+                  onSubmit={handleLoanFormSubmit} 
+                  officers={officers}
+                  availableEquipments={availableEquipments}
+                  isSubmitting={isSubmitting}
+                />
+              </DialogContent>
+            </Dialog>
+          )
         }
       />
 
@@ -190,9 +194,11 @@ export default function CautelasPage() {
                 <>
                     <h3 className="text-xl font-semibold text-foreground mb-2">Nenhuma cautela registrada</h3>
                     <p className="text-muted-foreground mb-4">Comece registrando novas cautelas de equipamentos.</p>
-                    <Button onClick={() => setIsLoanDialogOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Registrar Primeira Cautela
-                    </Button>
+                    {canManageLoans && (
+                      <Button onClick={() => setIsLoanDialogOpen(true)}>
+                          <PlusCircle className="mr-2 h-4 w-4" /> Registrar Primeira Cautela
+                      </Button>
+                    )}
                 </>
             )}
         </div>
@@ -263,7 +269,7 @@ export default function CautelasPage() {
                  )}
               </CardContent>
               <CardFooter className="border-t pt-4">
-                {loan.status === LoanStatus.ENTREGUE && (
+                {loan.status === LoanStatus.ENTREGUE && canManageLoans && (
                   <Button variant="default" size="sm" className="w-full bg-green-600 hover:bg-green-700 text-white" onClick={() => handleOpenReturnDialog(loan)}>
                     <ArrowLeftFromLine className="mr-2 h-4 w-4" /> Registrar Devolução
                   </Button>

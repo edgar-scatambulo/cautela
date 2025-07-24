@@ -1,6 +1,7 @@
 
 import { LayoutDashboard, Shield, Smartphone, Printer, Radio, Users, ClipboardList, FileText, UserCog, IdCard } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { UserRole } from '@/lib/types';
 
 export interface NavLink {
   href: string;
@@ -23,8 +24,7 @@ export const navLinks: NavLink[] = [
     // ],
   },
   { href: '/dashboard/policiais', label: 'Policiais', icon: IdCard }, // Changed icon to IdCard for better representation
-  { href: '/dashboard/cautelas', label: 'Cautelas', icon: ClipboardList },
+  { href: '/dashboard/cautelas', label: 'Cautelas', icon: ClipboardList, roles: [UserRole.ADMIN, UserRole.ADVANCED_USER, UserRole.OPERATOR] },
   { href: '/dashboard/relatorios', label: 'Relatórios', icon: FileText },
-  { href: '/dashboard/usuarios', label: 'Usuários', icon: UserCog, roles: ['Administrador'] },
+  { href: '/dashboard/usuarios', label: 'Usuários', icon: UserCog, roles: [UserRole.ADMIN, UserRole.ADVANCED_USER] },
 ];
-

@@ -24,7 +24,9 @@ export default function UsuariosPage() {
   const [editingUser, setEditingUser] = React.useState<SystemUser | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  if (currentUser?.role !== UserRole.ADMIN) {
+  const canManageUsers = currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.ADVANCED_USER;
+
+  if (!canManageUsers) {
     return (
        <div className="flex flex-col items-center justify-center h-full">
         <ShieldAlert className="h-16 w-16 text-destructive mb-4" />

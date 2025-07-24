@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LoanSchema } from '@/lib/schemas';
 import type { z } from 'zod';
 import type { PoliceOfficer, Loan, Equipment } from '@/lib/types';
-import { LoanStatus } from '@/lib/types';
+import { LoanStatus, UserRole } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -116,6 +116,8 @@ export default function DashboardPage() {
     }
   };
 
+  const canManageLoans = currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.ADVANCED_USER || currentUser?.role === UserRole.OPERATOR;
+
   return (
     <>
       <PageHeader
@@ -147,159 +149,161 @@ export default function DashboardPage() {
         </Link>
       </div>
       
-      <div className="mt-8">
-        <h2 className="text-2xl font-semibold font-headline text-foreground mb-4">Ações Rápidas</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Dialog open={isLoanDialogOpen} onOpenChange={setIsLoanDialogOpen}>
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-lg font-headline flex items-center">
-                  <PlusCircle className="mr-2 h-5 w-5 text-primary" />
-                  Nova Cautela
-                </CardTitle>
-                <CardDescription>Registrar nova cautela.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DialogTrigger asChild>
-                  <Button className="w-full">
-                    <PlusCircle className="mr-2 h-4 w-4" /> Registrar Cautela
-                  </Button>
-                </DialogTrigger>
-              </CardContent>
-            </Card>
-            <DialogContent className="sm:max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Registrar Nova Cautela</DialogTitle>
-                <ShadDialogDescription>Preencha os dados abaixo para registrar uma nova cautela de equipamento.</ShadDialogDescription>
-              </DialogHeader>
-              <LoanForm 
-                onSubmit={handleLoanFormSubmit} 
-                officers={officers}
-                availableEquipments={availableEquipments}
-                isSubmitting={isSubmittingLoan}
-              />
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={isReturnDialogOpen} onOpenChange={(open) => {
-            setIsReturnDialogOpen(open);
-            if (!open) {
-              setSelectedLoanForReturn(null);
-              setReturnObservation('');
-            }
-          }}>
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-lg font-headline flex items-center">
-                  <ArrowLeftFromLine className="mr-2 h-5 w-5 text-primary" />
-                  Registrar Devolução
-                </CardTitle>
-                <CardDescription>Registrar devolução de equipamentos.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DialogTrigger asChild>
-                  <Button className="w-full">
-                    <ArrowLeftFromLine className="mr-2 h-4 w-4" /> Registrar Devolução
-                  </Button>
-                </DialogTrigger>
-              </CardContent>
-            </Card>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Registrar Devolução de Equipamento</DialogTitle>
-                <ShadDialogDescription>Selecione a cautela ativa para registrar a devolução.</ShadDialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="loan-select">Selecionar Cautela Ativa</Label>
-                  <Select
-                    value={selectedLoanForReturn?.id}
-                    onValueChange={handleLoanSelectChange}
-                    disabled={activeLoansList.length === 0}
-                  >
-                    <SelectTrigger id="loan-select">
-                      <SelectValue placeholder={activeLoansList.length === 0 ? "Nenhuma cautela ativa" : "Selecione uma cautela"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {activeLoansList.map(loan => (
-                        <SelectItem key={loan.id} value={loan.id}>
-                          ({getOfficerName(loan.officerId)}) Data: {format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {activeLoansList.length === 0 && <p className="text-sm text-muted-foreground">Não há cautelas ativas para registrar devolução.</p>}
-                </div>
-
-                {selectedLoanForReturn && getLoanEquipments(selectedLoanForReturn).length > 1 && (
-                  <div className="space-y-2">
-                      <Label>Equipamentos a Devolver</Label>
-                      <ScrollArea className="h-40 w-full rounded-md border p-2">
-                          <div className="flex items-center space-x-2 pb-2 border-b mb-2">
-                              <Checkbox
-                                  id="select-all-return-dash"
-                                  checked={equipmentIdsForCurrentReturn.length === getLoanEquipments(selectedLoanForReturn).length}
-                                  onCheckedChange={handleSelectAllForReturn}
-                              />
-                              <Label htmlFor="select-all-return-dash" className="font-medium">Selecionar Todos</Label>
-                          </div>
-                          {getLoanEquipments(selectedLoanForReturn).map((equipment) => (
-                              <div key={equipment.id} className="flex items-center space-x-2 py-1">
-                                  <Checkbox
-                                      id={`return-dash-${equipment.id}`}
-                                      checked={equipmentIdsForCurrentReturn.includes(equipment.id)}
-                                      onCheckedChange={(checked) => {
-                                          setEquipmentIdsForCurrentReturn(currentIds => 
-                                              checked ? [...currentIds, equipment.id] : currentIds.filter(id => id !== equipment.id)
-                                          )
-                                      }}
-                                  />
-                                  <Label htmlFor={`return-dash-${equipment.id}`} className="font-normal">{equipment.brand} ({equipment.serialNumber})</Label>
-                              </div>
-                          ))}
-                      </ScrollArea>
-                  </div>
-                )}
-                
-                <div className="space-y-2">
-                  <Label htmlFor="return-observation">Observações da Devolução (Opcional)</Label>
-                  <Textarea
-                    id="return-observation"
-                    value={returnObservation}
-                    onChange={(e) => setReturnObservation(e.target.value)}
-                    placeholder="Estado do equipamento, avarias, etc."
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsReturnDialogOpen(false)}>Cancelar</Button>
-                <Button onClick={handleReturnFormSubmit} disabled={isSubmittingReturn || !selectedLoanForReturn || equipmentIdsForCurrentReturn.length === 0}>
-                  {isSubmittingReturn ? "Registrando..." : "Confirmar Devolução"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          <Link href="/dashboard/relatorios" legacyBehavior>
-            <a className="block">
-              <Card className="hover:shadow-lg transition-shadow h-full">
+      {canManageLoans && (
+        <div className="mt-8">
+          <h2 className="text-2xl font-semibold font-headline text-foreground mb-4">Ações Rápidas</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Dialog open={isLoanDialogOpen} onOpenChange={setIsLoanDialogOpen}>
+              <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle className="text-lg font-headline flex items-center">
-                    <FileText className="mr-2 h-5 w-5 text-primary" />
-                    Ver Relatórios
+                    <PlusCircle className="mr-2 h-5 w-5 text-primary" />
+                    Nova Cautela
                   </CardTitle>
-                  <CardDescription>Histórico de cautelas.</CardDescription>
+                  <CardDescription>Registrar nova cautela.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                   <Button className="w-full">
-                    <FileText className="mr-2 h-4 w-4" /> Acessar Relatórios
-                  </Button>
+                  <DialogTrigger asChild>
+                    <Button className="w-full">
+                      <PlusCircle className="mr-2 h-4 w-4" /> Registrar Cautela
+                    </Button>
+                  </DialogTrigger>
                 </CardContent>
               </Card>
-            </a>
-          </Link>
+              <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Registrar Nova Cautela</DialogTitle>
+                  <ShadDialogDescription>Preencha os dados abaixo para registrar uma nova cautela de equipamento.</ShadDialogDescription>
+                </DialogHeader>
+                <LoanForm 
+                  onSubmit={handleLoanFormSubmit} 
+                  officers={officers}
+                  availableEquipments={availableEquipments}
+                  isSubmitting={isSubmittingLoan}
+                />
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={isReturnDialogOpen} onOpenChange={(open) => {
+              setIsReturnDialogOpen(open);
+              if (!open) {
+                setSelectedLoanForReturn(null);
+                setReturnObservation('');
+              }
+            }}>
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle className="text-lg font-headline flex items-center">
+                    <ArrowLeftFromLine className="mr-2 h-5 w-5 text-primary" />
+                    Registrar Devolução
+                  </CardTitle>
+                  <CardDescription>Registrar devolução de equipamentos.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <DialogTrigger asChild>
+                    <Button className="w-full">
+                      <ArrowLeftFromLine className="mr-2 h-4 w-4" /> Registrar Devolução
+                    </Button>
+                  </DialogTrigger>
+                </CardContent>
+              </Card>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Registrar Devolução de Equipamento</DialogTitle>
+                  <ShadDialogDescription>Selecione a cautela ativa para registrar a devolução.</ShadDialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="loan-select">Selecionar Cautela Ativa</Label>
+                    <Select
+                      value={selectedLoanForReturn?.id}
+                      onValueChange={handleLoanSelectChange}
+                      disabled={activeLoansList.length === 0}
+                    >
+                      <SelectTrigger id="loan-select">
+                        <SelectValue placeholder={activeLoansList.length === 0 ? "Nenhuma cautela ativa" : "Selecione uma cautela"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {activeLoansList.map(loan => (
+                          <SelectItem key={loan.id} value={loan.id}>
+                            ({getOfficerName(loan.officerId)}) Data: {format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {activeLoansList.length === 0 && <p className="text-sm text-muted-foreground">Não há cautelas ativas para registrar devolução.</p>}
+                  </div>
+
+                  {selectedLoanForReturn && getLoanEquipments(selectedLoanForReturn).length > 1 && (
+                    <div className="space-y-2">
+                        <Label>Equipamentos a Devolver</Label>
+                        <ScrollArea className="h-40 w-full rounded-md border p-2">
+                            <div className="flex items-center space-x-2 pb-2 border-b mb-2">
+                                <Checkbox
+                                    id="select-all-return-dash"
+                                    checked={equipmentIdsForCurrentReturn.length === getLoanEquipments(selectedLoanForReturn).length}
+                                    onCheckedChange={handleSelectAllForReturn}
+                                />
+                                <Label htmlFor="select-all-return-dash" className="font-medium">Selecionar Todos</Label>
+                            </div>
+                            {getLoanEquipments(selectedLoanForReturn).map((equipment) => (
+                                <div key={equipment.id} className="flex items-center space-x-2 py-1">
+                                    <Checkbox
+                                        id={`return-dash-${equipment.id}`}
+                                        checked={equipmentIdsForCurrentReturn.includes(equipment.id)}
+                                        onCheckedChange={(checked) => {
+                                            setEquipmentIdsForCurrentReturn(currentIds => 
+                                                checked ? [...currentIds, equipment.id] : currentIds.filter(id => id !== equipment.id)
+                                            )
+                                        }}
+                                    />
+                                    <Label htmlFor={`return-dash-${equipment.id}`} className="font-normal">{equipment.brand} ({equipment.serialNumber})</Label>
+                                </div>
+                            ))}
+                        </ScrollArea>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="return-observation">Observações da Devolução (Opcional)</Label>
+                    <Textarea
+                      id="return-observation"
+                      value={returnObservation}
+                      onChange={(e) => setReturnObservation(e.target.value)}
+                      placeholder="Estado do equipamento, avarias, etc."
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsReturnDialogOpen(false)}>Cancelar</Button>
+                  <Button onClick={handleReturnFormSubmit} disabled={isSubmittingReturn || !selectedLoanForReturn || equipmentIdsForCurrentReturn.length === 0}>
+                    {isSubmittingReturn ? "Registrando..." : "Confirmar Devolução"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Link href="/dashboard/relatorios" legacyBehavior>
+              <a className="block">
+                <Card className="hover:shadow-lg transition-shadow h-full">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-headline flex items-center">
+                      <FileText className="mr-2 h-5 w-5 text-primary" />
+                      Ver Relatórios
+                    </CardTitle>
+                    <CardDescription>Histórico de cautelas.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                     <Button className="w-full">
+                      <FileText className="mr-2 h-4 w-4" /> Acessar Relatórios
+                    </Button>
+                  </CardContent>
+                </Card>
+              </a>
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

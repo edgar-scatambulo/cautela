@@ -724,5 +724,3 @@ export default function EquipamentosPage() {
     </TooltipProvider>
   );
 }
-
-    

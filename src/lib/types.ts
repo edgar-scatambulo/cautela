@@ -21,6 +21,7 @@ export interface Equipment {
 
 export enum UserRole {
   ADMIN = 'Administrador',
+  ADVANCED_USER = 'Usuário Avançado',
   OPERATOR = 'Operador',
 }
 
