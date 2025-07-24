@@ -57,6 +57,14 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
   const sortedOfficers = React.useMemo(() => {
     return [...officers].sort((a, b) => a.name.localeCompare(b.name));
   }, [officers]);
+  
+  const sortedEquipments = React.useMemo(() => {
+    return [...availableEquipments].sort((a, b) => {
+        const brandComparison = a.brand.localeCompare(b.brand);
+        if (brandComparison !== 0) return brandComparison;
+        return a.serialNumber.localeCompare(b.serialNumber);
+    });
+  }, [availableEquipments]);
 
   return (
     <Form {...form}>
@@ -111,8 +119,8 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
                   </FormControl>
                 </PopoverTrigger>
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                  <ScrollArea className="h-72">
-                  {availableEquipments.map((equipment) => (
+                  <ScrollArea className="h-72 w-full rounded-md border">
+                  {sortedEquipments.map((equipment) => (
                     <FormField
                       key={equipment.id}
                       control={form.control}
