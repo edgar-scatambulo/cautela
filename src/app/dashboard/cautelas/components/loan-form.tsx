@@ -120,46 +120,39 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
                 </PopoverTrigger>
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                   <ScrollArea className="h-72 w-full rounded-md border">
-                  {sortedEquipments.map((equipment) => (
-                    <FormField
-                      key={equipment.id}
-                      control={form.control}
-                      name="equipmentIds"
-                      render={({ field: itemField }) => {
-                        return (
-                          <FormItem
-                            key={equipment.id}
-                            className="flex flex-row items-start space-x-3 space-y-0 p-2 hover:bg-accent"
-                          >
-                            <FormControl>
-                              <Checkbox
-                                checked={itemField.value?.includes(equipment.id)}
-                                onCheckedChange={(checked) => {
-                                  return checked
-                                    ? itemField.onChange([...(itemField.value || []), equipment.id])
-                                    : itemField.onChange(
-                                        itemField.value?.filter(
-                                          (value) => value !== equipment.id
-                                        )
-                                      )
-                                }}
-                              />
-                            </FormControl>
-                            <FormLabel className="text-sm font-normal cursor-pointer w-full">
-                              <div>
-                                ({equipment.serialNumber}) {equipment.brand}
+                    <div className="p-1">
+                      {sortedEquipments.map((equipment) => (
+                        <FormItem
+                          key={equipment.id}
+                          className="flex flex-row items-start space-x-3 space-y-0 p-2 hover:bg-accent rounded-md"
+                        >
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(equipment.id)}
+                              onCheckedChange={(checked) => {
+                                const currentIds = field.value || [];
+                                const newIds = checked
+                                  ? [...currentIds, equipment.id]
+                                  : currentIds.filter(
+                                      (value) => value !== equipment.id
+                                    );
+                                field.onChange(newIds);
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="text-sm font-normal cursor-pointer w-full">
+                            <div>
+                              ({equipment.serialNumber}) {equipment.brand}
+                            </div>
+                            {equipment.observations && (
+                              <div className="text-xs text-muted-foreground mt-0.5">
+                                Obs: {equipment.observations}
                               </div>
-                              {equipment.observations && (
-                                <div className="text-xs text-muted-foreground mt-0.5">
-                                  Obs: {equipment.observations}
-                                </div>
-                              )}
-                            </FormLabel>
-                          </FormItem>
-                        )
-                      }}
-                    />
-                  ))}
+                            )}
+                          </FormLabel>
+                        </FormItem>
+                      ))}
+                    </div>
                   </ScrollArea>
                 </PopoverContent>
               </Popover>
