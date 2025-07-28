@@ -20,7 +20,7 @@ import { PoliceOfficerForm } from './components/police-officer-form';
 import { useStore } from '@/lib/store';
 import type { PoliceOfficer, Loan, Equipment } from '@/lib/types';
 import { LoanStatus, UserRole } from '@/lib/types';
-import { Shield, UserPlus, Edit3, Award, Trash2, Eye, Info, UserCircle, Mail, CalendarDays, Printer as PrinterIconLucide, CaseSensitive, Upload } from 'lucide-react';
+import { Shield, UserPlus, Edit3, Award, Trash2, Eye, Info, UserCircle, Mail, CalendarDays, Printer as PrinterIconLucide, CaseSensitive, Upload, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PoliceOfficerSchema } from '@/lib/schemas';
 import type { z } from 'zod';
@@ -96,12 +96,25 @@ export default function PoliciaisPage() {
   
   const [sortedOfficers, setSortedOfficers] = React.useState<PoliceOfficer[]>([]);
   const [rankFilter, setRankFilter] = React.useState<string>('all');
+  const [searchTerm, setSearchTerm] = React.useState('');
 
   React.useEffect(() => {
-    const filtered = officers.filter(officer => rankFilter === 'all' || officer.rank === rankFilter);
+    const lowercasedSearchTerm = searchTerm.toLowerCase();
+    
+    const filtered = officers.filter(officer => {
+      const rankMatch = rankFilter === 'all' || officer.rank === rankFilter;
+      
+      const searchMatch = searchTerm.trim() === '' ||
+        officer.name.toLowerCase().includes(lowercasedSearchTerm) ||
+        (officer.fullName && officer.fullName.toLowerCase().includes(lowercasedSearchTerm)) ||
+        officer.functionalId.toLowerCase().includes(lowercasedSearchTerm);
+
+      return rankMatch && searchMatch;
+    });
+
     const sorted = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
     setSortedOfficers(sorted);
-  }, [officers, rankFilter]);
+  }, [officers, rankFilter, searchTerm]);
 
   const uniqueRanks = React.useMemo(() => {
     return [...new Set(officers.map(o => o.rank))].sort((a, b) => a.localeCompare(b));
@@ -363,11 +376,24 @@ export default function PoliciaisPage() {
       />
       
       {officers.length > 0 && (
-        <div className="flex items-center gap-4 mb-4">
-            <div className="flex items-center gap-2">
+        <div className="flex flex-col md:flex-row items-center gap-4 mb-4">
+            <div className="flex-1 w-full md:w-auto">
+                <Label htmlFor="search-input">Pesquisar</Label>
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        id="search-input"
+                        placeholder="Pesquisar por nome, contato..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                    />
+                </div>
+            </div>
+            <div className="flex-1 w-full md:w-auto">
                 <Label htmlFor="rank-filter">Filtrar por Posto/Graduação</Label>
                 <Select value={rankFilter} onValueChange={setRankFilter}>
-                    <SelectTrigger id="rank-filter" className="w-[220px]">
+                    <SelectTrigger id="rank-filter">
                         <SelectValue placeholder="Todos os Postos" />
                     </SelectTrigger>
                     <SelectContent>
@@ -581,3 +607,5 @@ export default function PoliciaisPage() {
     </TooltipProvider>
   );
 }
+
+    
