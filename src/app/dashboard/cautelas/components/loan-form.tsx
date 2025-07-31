@@ -75,7 +75,7 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         {radioOperators.length > 0 && (
           <FormItem>
-            <FormLabel>Rádio Operador (Atalho)</FormLabel>
+            <FormLabel>Rádio Operador</FormLabel>
             <Select>
               <FormControl>
                 <SelectTrigger>
