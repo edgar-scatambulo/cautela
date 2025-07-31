@@ -115,7 +115,7 @@ export default function CautelasPage() {
   }, [loans, statusFilter]);
 
   const handleSendWhatsAppNotification = (loan: Loan, officer: PoliceOfficer, equipments: Equipment[]) => {
-    const officerName = officer.name;
+    const officerName = officer.fullName || officer.name;
     const loanDate = format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR });
     const loanTime = loan.loanTime;
     const equipmentList = equipments.map(eq => `- ${eq.brand} (${eq.serialNumber})`).join('\n');
@@ -132,7 +132,7 @@ export default function CautelasPage() {
   };
   
   const handleSendReturnWhatsAppNotification = (loan: Loan, officer: PoliceOfficer, equipments: Equipment[]) => {
-    const officerName = officer.name;
+    const officerName = officer.fullName || officer.name;
     const returnDate = loan.actualReturnDate ? format(parse(loan.actualReturnDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR }) : '';
     const returnTime = loan.actualReturnTime || '';
     const equipmentList = equipments.map(eq => `- ${eq.brand} (${eq.serialNumber})`).join('\n');
