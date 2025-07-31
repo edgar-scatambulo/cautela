@@ -76,11 +76,7 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
         {radioOperators.length > 0 && (
           <FormItem>
             <FormLabel>Rádio Operador (Atalho)</FormLabel>
-            <Select onValueChange={(value) => {
-              if (value) {
-                form.setValue("officerId", value, { shouldValidate: true });
-              }
-            }}>
+            <Select>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione um rádio operador" />
