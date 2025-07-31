@@ -509,8 +509,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   updateLoanStatus: async (loanId, status, equipmentIdsToReturn, returnDate, returnTime, returnObservation, returnedToUserId) => {
     if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
-    const currentUser = get().currentUser;
-    if (!currentUser) throw new Error("Usuário não autenticado.");
+    if (!returnedToUserId) throw new Error("O Rádio Operador recebedor é obrigatório.");
 
     const batch = writeBatch(db);
     const loanRef = doc(db, 'loans', loanId);
@@ -521,51 +520,44 @@ export const useStore = create<AppState>((set, get) => ({
     }
     const currentLoanData = loanDoc.data() as Loan;
     
-    // Determine which equipment IDs remain with the officer
-    const remainingEquipmentIds = equipmentIdsToReturn 
-      ? currentLoanData.equipmentIds.filter(id => !equipmentIdsToReturn.includes(id))
-      : [];
+    const equipmentToReturnIds = equipmentIdsToReturn ?? currentLoanData.equipmentIds;
 
-    // If some equipment remains, update the current loan and create a new one for the returned items
-    if (remainingEquipmentIds.length > 0 && equipmentIdsToReturn && equipmentIdsToReturn.length > 0) {
-       // Update the existing loan to only contain the remaining equipment
+    const remainingEquipmentIds = currentLoanData.equipmentIds.filter(id => !equipmentToReturnIds.includes(id));
+
+    if (remainingEquipmentIds.length > 0 && equipmentToReturnIds.length > 0) {
       batch.update(loanRef, {
         equipmentIds: remainingEquipmentIds,
         updatedAt: serverTimestamp(),
-        // Add a note that this was a partial return
         loanObservation: `${currentLoanData.loanObservation || ''}\n[Devolução parcial registrada em ${new Date().toLocaleString('pt-BR')}]`.trim()
       });
 
-      // Create a *new* loan document to represent the returned portion
       const newReturnedLoanRef = doc(collection(db, 'loans'));
       batch.set(newReturnedLoanRef, {
         ...currentLoanData,
-        id: newReturnedLoanRef.id, // Not strictly necessary but good practice
-        equipmentIds: equipmentIdsToReturn, // Only the returned items
+        id: newReturnedLoanRef.id,
+        equipmentIds: equipmentToReturnIds,
         status: LoanStatus.DEVOLVIDO,
         actualReturnDate: returnDate || new Date().toISOString().split('T')[0],
         actualReturnTime: returnTime || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         returnObservation: returnObservation || '',
-        returnedToUserId: returnedToUserId || currentUser.id,
+        returnedToUserId: returnedToUserId,
         updatedAt: serverTimestamp(),
         loanObservation: `[Cautela original: ${loanId}] ${currentLoanData.loanObservation || ''}`.trim()
       });
 
     } else {
-      // This is a full return, just update the existing loan document
       batch.update(loanRef, {
         status: status,
         actualReturnDate: returnDate || new Date().toISOString().split('T')[0],
         actualReturnTime: returnTime || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         returnObservation: returnObservation || '',
-        returnedToUserId: returnedToUserId || currentUser.id,
+        returnedToUserId: returnedToUserId,
         updatedAt: serverTimestamp(),
       });
     }
 
-    // Update the status of the returned equipment
-    if (equipmentIdsToReturn) {
-        equipmentIdsToReturn.forEach(eqId => {
+    if (equipmentToReturnIds) {
+        equipmentToReturnIds.forEach(eqId => {
             const equipDocRef = doc(db, 'equipments', eqId);
             batch.update(equipDocRef, { status: 'Disponível', updatedAt: serverTimestamp() });
         });

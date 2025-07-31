@@ -42,8 +42,13 @@ export default function DashboardPage() {
   const [returnObservation, setReturnObservation] = React.useState('');
   const [isSubmittingReturn, setIsSubmittingReturn] = React.useState(false);
   const [equipmentIdsForCurrentReturn, setEquipmentIdsForCurrentReturn] = React.useState<string[]>([]);
+  const [receivingOperatorId, setReceivingOperatorId] = React.useState<string>('');
 
   const activeLoansList = loans.filter(loan => loan.status === LoanStatus.ENTREGUE);
+  
+  const radioOperators = React.useMemo(() => {
+    return officers.filter(o => o.isRadioOperator).sort((a, b) => a.name.localeCompare(b.name));
+  }, [officers]);
 
   useEffect(() => {
     setTotalEquipments(equipments.length);
@@ -74,18 +79,19 @@ export default function DashboardPage() {
   };
 
   const handleReturnFormSubmit = async () => {
-    if (!selectedLoanForReturn || !currentUser) {
-      toast({ title: "Erro", description: "Selecione uma cautela para devolver.", variant: "destructive" });
+    if (!selectedLoanForReturn || !currentUser || !receivingOperatorId) {
+      toast({ title: "Erro", description: "Selecione uma cautela e um rádio operador para devolver.", variant: "destructive" });
       return;
     }
     setIsSubmittingReturn(true);
     try {
-      await updateLoanStatus(selectedLoanForReturn.id, LoanStatus.DEVOLVIDO, equipmentIdsForCurrentReturn, undefined, undefined, returnObservation, currentUser.id);
+      await updateLoanStatus(selectedLoanForReturn.id, LoanStatus.DEVOLVIDO, equipmentIdsForCurrentReturn, undefined, undefined, returnObservation, receivingOperatorId);
       toast({ title: "Devolução Registrada", description: "A devolução foi registrada com sucesso." });
       setIsReturnDialogOpen(false);
       setSelectedLoanForReturn(null);
       setReturnObservation('');
       setEquipmentIdsForCurrentReturn([]);
+      setReceivingOperatorId('');
     } catch (error: any) {
       toast({ title: "Erro ao Registrar Devolução", description: error.message || "Ocorreu um erro.", variant: "destructive" });
     } finally {
@@ -189,6 +195,7 @@ export default function DashboardPage() {
               if (!open) {
                 setSelectedLoanForReturn(null);
                 setReturnObservation('');
+                setReceivingOperatorId('');
               }
             }}>
               <Card className="hover:shadow-lg transition-shadow">
@@ -233,6 +240,24 @@ export default function DashboardPage() {
                     </Select>
                     {activeLoansList.length === 0 && <p className="text-sm text-muted-foreground">Não há cautelas ativas para registrar devolução.</p>}
                   </div>
+                  
+                  {selectedLoanForReturn && (
+                    <div className="space-y-2">
+                      <Label htmlFor="dash-receiving-operator-select">Rádio Operador (Recebedor)</Label>
+                      <Select onValueChange={setReceivingOperatorId} value={receivingOperatorId} disabled={radioOperators.length === 0}>
+                          <SelectTrigger id="dash-receiving-operator-select">
+                            <SelectValue placeholder={radioOperators.length === 0 ? "Nenhum rádio operador" : "Selecione o recebedor"} />
+                          </SelectTrigger>
+                        <SelectContent>
+                          {radioOperators.map((operator) => (
+                            <SelectItem key={operator.id} value={operator.id}>
+                              {operator.name} - {operator.rank}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   {selectedLoanForReturn && getLoanEquipments(selectedLoanForReturn).length > 1 && (
                     <div className="space-y-2">
@@ -276,7 +301,7 @@ export default function DashboardPage() {
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsReturnDialogOpen(false)}>Cancelar</Button>
-                  <Button onClick={handleReturnFormSubmit} disabled={isSubmittingReturn || !selectedLoanForReturn || equipmentIdsForCurrentReturn.length === 0}>
+                  <Button onClick={handleReturnFormSubmit} disabled={isSubmittingReturn || !selectedLoanForReturn || equipmentIdsForCurrentReturn.length === 0 || !receivingOperatorId}>
                     {isSubmittingReturn ? "Registrando..." : "Confirmar Devolução"}
                   </Button>
                 </DialogFooter>

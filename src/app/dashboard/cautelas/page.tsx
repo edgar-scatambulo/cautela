@@ -32,6 +32,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 
 const ContactDisplay = ({ contactValue }: { contactValue: string }) => {
@@ -83,9 +90,14 @@ export default function CautelasPage() {
   const [returnObservation, setReturnObservation] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [equipmentIdsForCurrentReturn, setEquipmentIdsForCurrentReturn] = React.useState<string[]>([]);
+  const [receivingOperatorId, setReceivingOperatorId] = React.useState<string>('');
   
   const availableEquipments = equipments.filter(eq => eq.status === 'Disponível');
   const statusFilter = searchParams.get('status');
+
+  const radioOperators = React.useMemo(() => {
+    return officers.filter(o => o.isRadioOperator).sort((a, b) => a.name.localeCompare(b.name));
+  }, [officers]);
 
   React.useEffect(() => {
     let filtered = [...loans];
@@ -118,20 +130,22 @@ export default function CautelasPage() {
   const handleOpenReturnDialog = (loan: Loan) => {
     setSelectedLoanForReturn(loan);
     setReturnObservation('');
+    setReceivingOperatorId('');
     const loanEquipments = getLoanEquipments(loan);
     setEquipmentIdsForCurrentReturn(loanEquipments.map(e => e.id));
     setIsReturnDialogOpen(true);
   };
 
   const handleConfirmReturn = async () => {
-    if (selectedLoanForReturn && currentUser) {
+    if (selectedLoanForReturn && currentUser && receivingOperatorId) {
       setIsSubmitting(true);
       try {
-        await updateLoanStatus(selectedLoanForReturn.id, LoanStatus.DEVOLVIDO, equipmentIdsForCurrentReturn, undefined, undefined, returnObservation, currentUser.id);
+        await updateLoanStatus(selectedLoanForReturn.id, LoanStatus.DEVOLVIDO, equipmentIdsForCurrentReturn, undefined, undefined, returnObservation, receivingOperatorId);
         toast({ title: "Devolução Registrada", description: "A devolução foi registrada com sucesso." });
         setIsReturnDialogOpen(false);
         setSelectedLoanForReturn(null);
         setEquipmentIdsForCurrentReturn([]);
+        setReceivingOperatorId('');
       } catch (error: any) {
         toast({ title: "Erro ao Devolver", description: error.message, variant: "destructive" });
       } finally {
@@ -210,7 +224,7 @@ export default function CautelasPage() {
           {displayedLoans.map((loan) => {
             const officer = officers.find(o => o.id === loan.officerId);
             const loanEquipments = getLoanEquipments(loan);
-            const returnedByUser = loan.returnedToUserId ? users.find(u => u.id === loan.returnedToUserId) : null;
+            const returnedByUser = loan.returnedToUserId ? officers.find(u => u.id === loan.returnedToUserId) : null;
             return (
             <Card key={loan.id} className="flex flex-col">
               <CardHeader>
@@ -302,6 +316,22 @@ export default function CautelasPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           
+          <div className="space-y-2 py-2">
+            <Label htmlFor="receiving-operator-select">Rádio Operador (Recebedor)</Label>
+            <Select onValueChange={setReceivingOperatorId} value={receivingOperatorId} disabled={radioOperators.length === 0}>
+                <SelectTrigger id="receiving-operator-select">
+                  <SelectValue placeholder={radioOperators.length === 0 ? "Nenhum rádio operador cadastrado" : "Selecione o rádio operador"} />
+                </SelectTrigger>
+              <SelectContent>
+                {radioOperators.map((operator) => (
+                  <SelectItem key={operator.id} value={operator.id}>
+                    {operator.name} - {operator.rank}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {selectedLoanForReturn && getLoanEquipments(selectedLoanForReturn).length > 1 && (
             <div className="space-y-2 py-2">
                 <Label>Equipamentos a Devolver</Label>
@@ -343,7 +373,7 @@ export default function CautelasPage() {
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setSelectedLoanForReturn(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmReturn} disabled={isSubmitting || equipmentIdsForCurrentReturn.length === 0} className="bg-green-600 hover:bg-green-700">
+            <AlertDialogAction onClick={handleConfirmReturn} disabled={isSubmitting || equipmentIdsForCurrentReturn.length === 0 || !receivingOperatorId} className="bg-green-600 hover:bg-green-700">
                 {isSubmitting ? 'Devolvendo...' : 'Confirmar Devolução'}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -352,5 +382,3 @@ export default function CautelasPage() {
     </>
   );
 }
-
-    
