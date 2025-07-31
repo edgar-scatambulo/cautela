@@ -224,6 +224,7 @@ export default function CautelasPage() {
           {displayedLoans.map((loan) => {
             const officer = officers.find(o => o.id === loan.officerId);
             const loanEquipments = getLoanEquipments(loan);
+            const radioOperator = loan.radioOperatorId ? officers.find(o => o.id === loan.radioOperatorId) : null;
             const returnedByUser = loan.returnedToUserId ? officers.find(u => u.id === loan.returnedToUserId) : null;
             return (
             <Card key={loan.id} className="flex flex-col">
@@ -255,8 +256,14 @@ export default function CautelasPage() {
                 )}
                  <CardDescription className="flex items-center text-sm mt-1">
                   <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" /> 
-                  {format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR })} às {loan.loanTime}
+                  Cautelado em: {format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR })} às {loan.loanTime}
                 </CardDescription>
+                 {radioOperator && (
+                    <CardDescription className="flex items-center text-sm mt-1">
+                      <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                      Entregue por: {radioOperator.name}
+                    </CardDescription>
+                  )}
               </CardHeader>
               <CardContent className="flex-grow space-y-2">
                 <h4 className="font-medium text-sm text-foreground">Equipamentos:</h4>
@@ -278,14 +285,14 @@ export default function CautelasPage() {
                       Devolvido em: {format(parse(loan.actualReturnDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR })} às {loan.actualReturnTime}
                     </CardDescription>
                     {returnedByUser && (
-                       <CardDescription className="flex items-center text-sm">
+                       <CardDescription className="flex items-center text-sm mt-1">
                          <User className="h-4 w-4 mr-2 text-muted-foreground" />
                          Recebido por: {returnedByUser.name}
                        </CardDescription>
                     )}
                     {loan.returnObservation && (
                        <div>
-                        <h4 className="font-medium text-sm text-foreground mt-1">Observação (Devolução):</h4>
+                        <h4 className="font-medium text-sm text-foreground mt-2">Observação (Devolução):</h4>
                         <p className="text-sm text-muted-foreground whitespace-pre-wrap">{loan.returnObservation}</p>
                       </div>
                     )}
@@ -382,3 +389,5 @@ export default function CautelasPage() {
     </>
   );
 }
+
+    
