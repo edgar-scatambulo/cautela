@@ -18,6 +18,12 @@ const getOfficerName = (officerId: string, officers: PoliceOfficer[]): string =>
   return officer ? `${officer.name} (${officer.rank})` : 'Desconhecido';
 };
 
+const getReceivingOfficerName = (officerId: string, officers: PoliceOfficer[]): string => {
+    const officer = officers.find(o => o.id === officerId);
+    return officer ? officer.name : 'Desconhecido';
+};
+
+
 export default function RelatoriosPage() {
   const { loans, officers, equipments } = useStore();
   const [filteredLoans, setFilteredLoans] = React.useState<Loan[]>([]);
@@ -103,6 +109,7 @@ export default function RelatoriosPage() {
         <div className="space-y-6">
           {filteredLoans.map((loan) => {
             const loanEquipments = getLoanEquipments(loan);
+            const returnedByUser = loan.returnedToUserId ? officers.find(u => u.id === loan.returnedToUserId) : null;
             return (
             <div key={loan.id}>
               <Card className="print:hidden">
@@ -117,11 +124,19 @@ export default function RelatoriosPage() {
                           Cautela: {format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })} às {loan.loanTime}
                         </CardDescription>
                         {loan.status === LoanStatus.DEVOLVIDO && loan.actualReturnDate && loan.actualReturnTime && (
-                            <CardDescription className="flex items-center text-sm mt-0.5">
-                              <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" /> 
-                              Devolução: {format(parse(loan.actualReturnDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })} às {loan.actualReturnTime}
-                            </CardDescription>
-                          )}
+                            <>
+                                <CardDescription className="flex items-center text-sm mt-0.5">
+                                <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" /> 
+                                Devolução: {format(parse(loan.actualReturnDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })} às {loan.actualReturnTime}
+                                </CardDescription>
+                                {returnedByUser && (
+                                <CardDescription className="flex items-center text-sm mt-0.5">
+                                    <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                                    Recebido por: {returnedByUser.name}
+                                </CardDescription>
+                                )}
+                            </>
+                        )}
                     </div>
                     <span className={`px-2 py-0.5 text-xs rounded-full ${
                       loan.status === LoanStatus.ENTREGUE ? 
@@ -159,11 +174,25 @@ export default function RelatoriosPage() {
                     <div className="font-bold">Status:</div>
                     <div>{loan.status}</div>
 
-                    <div className="font-bold">Data:</div>
+                    <div className="font-bold">Data Cautela:</div>
                     <div>{format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR })} às {loan.loanTime}</div>
-                    
+
+                    {loan.status === LoanStatus.DEVOLVIDO && loan.actualReturnDate && (
+                      <>
+                        <div className="font-bold">Data Devolução:</div>
+                        <div>{format(parse(loan.actualReturnDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR })} às {loan.actualReturnTime}</div>
+                      </>
+                    )}
+
                     <div className="font-bold">Policial Responsável:</div>
                     <div>{getOfficerName(loan.officerId, officers)}</div>
+
+                     {loan.returnedToUserId && (
+                      <>
+                        <div className="font-bold">Recebido por:</div>
+                        <div>{getReceivingOfficerName(loan.returnedToUserId, officers)}</div>
+                      </>
+                     )}
                     
                     <div className="font-bold self-start">Equipamentos:</div>
                     <div>
