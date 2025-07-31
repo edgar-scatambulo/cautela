@@ -114,11 +114,38 @@ export default function CautelasPage() {
     }));
   }, [loans, statusFilter]);
 
+  const handleSendWhatsAppNotification = (loan: Loan, officer: PoliceOfficer, equipments: Equipment[]) => {
+    const officerName = officer.name;
+    const loanDate = format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR });
+    const loanTime = loan.loanTime;
+    const equipmentList = equipments.map(eq => `- ${eq.brand} (${eq.serialNumber})`).join('\n');
+    const message = `Olá, ${officerName}!\n\nUma cautela de equipamento foi registrada em seu nome em *${loanDate} às ${loanTime}*.\n\n*Equipamentos:*\n${equipmentList}\n\nPor favor, confirme o recebimento.`;
+
+    const cleanedPhone = officer.functionalId.replace(/\D/g, '');
+    let whatsappNumber = cleanedPhone;
+    if ((whatsappNumber.length === 10 || whatsappNumber.length === 11) && !whatsappNumber.startsWith('55')) {
+      whatsappNumber = '55' + whatsappNumber;
+    }
+
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   const handleLoanFormSubmit = async (values: z.infer<typeof LoanSchema>) => {
     setIsSubmitting(true);
     try {
-      await addLoan(values);
-      toast({ title: "Cautela Registrada", description: `Nova cautela registrada com sucesso.` });
+      const { newLoan, officer, loanedEquipments } = await addLoan(values);
+      
+      toast({ 
+        title: "Cautela Registrada", 
+        description: `Nova cautela para ${officer.name} registrada com sucesso.`,
+        action: (
+          <Button variant="outline" size="sm" onClick={() => handleSendWhatsAppNotification(newLoan, officer, loanedEquipments)}>
+            Notificar via WhatsApp
+          </Button>
+        )
+      });
+
       setIsLoanDialogOpen(false);
     } catch (error: any) {
       toast({ title: "Erro ao Registrar Cautela", description: error.message || "Ocorreu um erro.", variant: "destructive" });
@@ -389,5 +416,3 @@ export default function CautelasPage() {
     </>
   );
 }
-
-    

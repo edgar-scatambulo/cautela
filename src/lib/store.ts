@@ -73,7 +73,7 @@ interface AppState {
   deleteOfficer: (officerId: string) => Promise<void>;
   
   // Loan Actions
-  addLoan: (loanData: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'loanedByUserId' >) => Promise<void>;
+  addLoan: (loanData: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'loanedByUserId' >) => Promise<{ newLoan: Loan, officer: PoliceOfficer, loanedEquipments: Equipment[] }>;
   updateLoanStatus: (loanId: string, status: LoanStatus, equipmentIdsToReturn?: string[], returnDate?: string, returnTime?: string, returnObservation?: string, returnedToUserId?: string) => Promise<void>;
 }
 
@@ -484,27 +484,41 @@ export const useStore = create<AppState>((set, get) => ({
 
   addLoan: async (loanData) => {
     if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
-    const currentUser = get().currentUser;
+    const { currentUser, officers, equipments } = get();
     if (!currentUser) {
       throw new Error("Usuário não autenticado para registrar cautela.");
     }
 
     const batch = writeBatch(db);
     const newLoanRef = doc(collection(db, 'loans'));
-    batch.set(newLoanRef, {
+    const timestamp = serverTimestamp();
+
+    const finalLoanData = {
       ...loanData,
       status: LoanStatus.ENTREGUE,
       loanedByUserId: currentUser.id,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+    batch.set(newLoanRef, finalLoanData);
 
     loanData.equipmentIds.forEach(eqId => {
       const equipDocRef = doc(db, 'equipments', eqId);
-      batch.update(equipDocRef, { status: 'Em Cautela', updatedAt: serverTimestamp() });
+      batch.update(equipDocRef, { status: 'Em Cautela', updatedAt: timestamp });
     });
 
     await batch.commit();
+
+    const officer = officers.find(o => o.id === loanData.officerId);
+    if (!officer) throw new Error("Policial não encontrado para notificação.");
+    
+    const loanedEquipments = loanData.equipmentIds.map(id => equipments.find(e => e.id === id)).filter(Boolean) as Equipment[];
+
+    return { 
+      newLoan: { ...loanData, id: newLoanRef.id, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), status: LoanStatus.ENTREGUE, loanedByUserId: currentUser.id },
+      officer,
+      loanedEquipments
+    };
   },
 
   updateLoanStatus: async (loanId, status, equipmentIdsToReturn, returnDate, returnTime, returnObservation, returnedToUserId) => {
