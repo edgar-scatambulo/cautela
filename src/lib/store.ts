@@ -74,7 +74,7 @@ interface AppState {
   
   // Loan Actions
   addLoan: (loanData: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'loanedByUserId' >) => Promise<{ newLoan: Loan, officer: PoliceOfficer, loanedEquipments: Equipment[] }>;
-  updateLoanStatus: (loanId: string, status: LoanStatus, equipmentIdsToReturn?: string[], returnDate?: string, returnTime?: string, returnObservation?: string, returnedToUserId?: string) => Promise<void>;
+  updateLoanStatus: (loanId: string, status: LoanStatus, equipmentIdsToReturn?: string[], returnDate?: string, returnTime?: string, returnObservation?: string, returnedToUserId?: string) => Promise<{ returnedLoan: Loan, officer: PoliceOfficer, returnedEquipments: Equipment[] }>;
 }
 
 const FIREBASE_NOT_CONFIGURED_ERROR = "Firebase não está configurado. Verifique as variáveis de ambiente do seu projeto.";
@@ -523,6 +523,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   updateLoanStatus: async (loanId, status, equipmentIdsToReturn, returnDate, returnTime, returnObservation, returnedToUserId) => {
     if (!db) throw new Error(FIREBASE_NOT_CONFIGURED_ERROR);
+    const { officers, equipments } = get();
     if (!returnedToUserId) throw new Error("O Rádio Operador recebedor é obrigatório.");
 
     const batch = writeBatch(db);
@@ -537,8 +538,14 @@ export const useStore = create<AppState>((set, get) => ({
     const equipmentToReturnIds = equipmentIdsToReturn ?? currentLoanData.equipmentIds;
 
     const remainingEquipmentIds = currentLoanData.equipmentIds.filter(id => !equipmentToReturnIds.includes(id));
+    
+    const actualReturnDate = returnDate || new Date().toISOString().split('T')[0];
+    const actualReturnTime = returnTime || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    let returnedLoan: Loan;
 
     if (remainingEquipmentIds.length > 0 && equipmentToReturnIds.length > 0) {
+      // Partial return
       batch.update(loanRef, {
         equipmentIds: remainingEquipmentIds,
         updatedAt: serverTimestamp(),
@@ -546,24 +553,37 @@ export const useStore = create<AppState>((set, get) => ({
       });
 
       const newReturnedLoanRef = doc(collection(db, 'loans'));
-      batch.set(newReturnedLoanRef, {
+      returnedLoan = {
         ...currentLoanData,
         id: newReturnedLoanRef.id,
         equipmentIds: equipmentToReturnIds,
         status: LoanStatus.DEVOLVIDO,
-        actualReturnDate: returnDate || new Date().toISOString().split('T')[0],
-        actualReturnTime: returnTime || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        actualReturnDate,
+        actualReturnTime,
         returnObservation: returnObservation || '',
         returnedToUserId: returnedToUserId,
-        updatedAt: serverTimestamp(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         loanObservation: `[Cautela original: ${loanId}] ${currentLoanData.loanObservation || ''}`.trim()
-      });
+      };
+      batch.set(newReturnedLoanRef, { ...returnedLoan, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
 
     } else {
+      // Full return
+       returnedLoan = {
+        ...currentLoanData,
+        id: loanId,
+        status: status,
+        actualReturnDate,
+        actualReturnTime,
+        returnObservation: returnObservation || '',
+        returnedToUserId: returnedToUserId,
+        updatedAt: new Date().toISOString(),
+      };
       batch.update(loanRef, {
         status: status,
-        actualReturnDate: returnDate || new Date().toISOString().split('T')[0],
-        actualReturnTime: returnTime || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        actualReturnDate,
+        actualReturnTime,
         returnObservation: returnObservation || '',
         returnedToUserId: returnedToUserId,
         updatedAt: serverTimestamp(),
@@ -578,6 +598,13 @@ export const useStore = create<AppState>((set, get) => ({
     }
 
     await batch.commit();
+
+    const officer = officers.find(o => o.id === currentLoanData.officerId);
+    if (!officer) throw new Error("Policial não encontrado para notificação.");
+
+    const returnedEquipments = equipmentToReturnIds.map(id => equipments.find(e => e.id === id)).filter(Boolean) as Equipment[];
+
+    return { returnedLoan, officer, returnedEquipments };
   },
 }));
 

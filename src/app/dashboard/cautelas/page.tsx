@@ -130,6 +130,23 @@ export default function CautelasPage() {
     const whatsappUrl = `https://web.whatsapp.com/send?phone=${whatsappNumber}&text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
+  
+  const handleSendReturnWhatsAppNotification = (loan: Loan, officer: PoliceOfficer, equipments: Equipment[]) => {
+    const officerName = officer.name;
+    const returnDate = loan.actualReturnDate ? format(parse(loan.actualReturnDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR }) : '';
+    const returnTime = loan.actualReturnTime || '';
+    const equipmentList = equipments.map(eq => `- ${eq.brand} (${eq.serialNumber})`).join('\n');
+    const message = `Olá, ${officerName}!\n\nOs seguintes equipamentos foram devolvidos da sua cautela em *${returnDate} às ${returnTime}*.\n\n*Equipamentos Devolvidos:*\n${equipmentList}`;
+
+    const cleanedPhone = officer.functionalId.replace(/\D/g, '');
+    let whatsappNumber = cleanedPhone;
+    if ((whatsappNumber.length === 10 || whatsappNumber.length === 11) && !whatsappNumber.startsWith('55')) {
+      whatsappNumber = '55' + whatsappNumber;
+    }
+
+    const whatsappUrl = `https://web.whatsapp.com/send?phone=${whatsappNumber}&text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
 
   const handleLoanFormSubmit = async (values: z.infer<typeof LoanSchema>) => {
     setIsSubmitting(true);
@@ -167,8 +184,18 @@ export default function CautelasPage() {
     if (selectedLoanForReturn && currentUser && receivingOperatorId) {
       setIsSubmitting(true);
       try {
-        await updateLoanStatus(selectedLoanForReturn.id, LoanStatus.DEVOLVIDO, equipmentIdsForCurrentReturn, undefined, undefined, returnObservation, receivingOperatorId);
-        toast({ title: "Devolução Registrada", description: "A devolução foi registrada com sucesso." });
+        const { returnedLoan, officer, returnedEquipments } = await updateLoanStatus(selectedLoanForReturn.id, LoanStatus.DEVOLVIDO, equipmentIdsForCurrentReturn, undefined, undefined, returnObservation, receivingOperatorId);
+        
+        toast({ 
+          title: "Devolução Registrada", 
+          description: "A devolução foi registrada com sucesso.",
+          action: (
+            <Button variant="outline" size="sm" onClick={() => handleSendReturnWhatsAppNotification(returnedLoan, officer, returnedEquipments)}>
+              Notificar via WhatsApp
+            </Button>
+          )
+        });
+
         setIsReturnDialogOpen(false);
         setSelectedLoanForReturn(null);
         setEquipmentIdsForCurrentReturn([]);
