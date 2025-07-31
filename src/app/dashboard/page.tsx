@@ -70,7 +70,7 @@ export default function DashboardPage() {
     const loanDate = format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR });
     const loanTime = loan.loanTime;
     const equipmentList = equipments.map(eq => `- ${eq.brand} (${eq.serialNumber})`).join('\n');
-    const message = `Olá, ${officerName}!\n\nUma cautela de equipamento foi registrada em seu nome em *${loanDate} às ${loanTime}*.\n\n*Equipamentos:*\n${equipmentList}\n\nPor favor, confirme o recebimento.`;
+    const message = `Olá, senhor, ${officerName}!\n\nUma cautela de equipamento foi registrada em seu nome em *${loanDate} às ${loanTime}*.\n\n*Equipamentos:*\n${equipmentList}\n\nPor favor, confirme o recebimento.`;
 
     const cleanedPhone = officer.functionalId.replace(/\D/g, '');
     let whatsappNumber = cleanedPhone;
@@ -87,7 +87,7 @@ export default function DashboardPage() {
     const returnDate = loan.actualReturnDate ? format(parse(loan.actualReturnDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR }) : '';
     const returnTime = loan.actualReturnTime || '';
     const equipmentList = equipments.map(eq => `- ${eq.brand} (${eq.serialNumber})`).join('\n');
-    const message = `Olá, ${officerName}!\n\nOs seguintes equipamentos foram devolvidos da sua cautela em *${returnDate} às ${returnTime}*.\n\n*Equipamentos Devolvidos:*\n${equipmentList}`;
+    const message = `Olá, senhor, ${officerName}!\n\nOs seguintes equipamentos foram devolvidos da sua cautela em *${returnDate} às ${returnTime}*.\n\n*Equipamentos Devolvidos:*\n${equipmentList}`;
 
     const cleanedPhone = officer.functionalId.replace(/\D/g, '');
     let whatsappNumber = cleanedPhone;
