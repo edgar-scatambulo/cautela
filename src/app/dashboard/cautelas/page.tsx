@@ -128,8 +128,6 @@ export default function CautelasPage() {
         message += `\n\n*Observações da Cautela:*\n${loan.loanObservation}`;
     }
 
-    message += `\n\nPor favor, confirme o recebimento.`;
-
     const cleanedPhone = officer.functionalId.replace(/\D/g, '');
     let whatsappNumber = cleanedPhone;
     if ((whatsappNumber.length === 10 || whatsappNumber.length === 11) && !whatsappNumber.startsWith('55')) {
