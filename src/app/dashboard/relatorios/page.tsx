@@ -18,7 +18,7 @@ const getOfficerName = (officerId: string, officers: PoliceOfficer[]): string =>
   return officer ? `${officer.name} (${officer.rank})` : 'Desconhecido';
 };
 
-const getReceivingOfficerName = (officerId: string, officers: PoliceOfficer[]): string => {
+const getOperatorName = (officerId: string, officers: PoliceOfficer[]): string => {
     const officer = officers.find(o => o.id === officerId);
     return officer ? officer.name : 'Desconhecido';
 };
@@ -109,6 +109,7 @@ export default function RelatoriosPage() {
         <div className="space-y-6">
           {filteredLoans.map((loan) => {
             const loanEquipments = getLoanEquipments(loan);
+            const radioOperator = loan.radioOperatorId ? officers.find(o => o.id === loan.radioOperatorId) : null;
             const returnedByUser = loan.returnedToUserId ? officers.find(u => u.id === loan.returnedToUserId) : null;
             return (
             <div key={loan.id}>
@@ -124,18 +125,22 @@ export default function RelatoriosPage() {
                           Cautela: {format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })} às {loan.loanTime}
                         </CardDescription>
                         {loan.status === LoanStatus.DEVOLVIDO && loan.actualReturnDate && loan.actualReturnTime && (
-                            <>
-                                <CardDescription className="flex items-center text-sm mt-0.5">
-                                <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" /> 
-                                Devolução: {format(parse(loan.actualReturnDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })} às {loan.actualReturnTime}
-                                </CardDescription>
-                                {returnedByUser && (
-                                <CardDescription className="flex items-center text-sm mt-0.5">
-                                    <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                                    Recebido por: {returnedByUser.name}
-                                </CardDescription>
-                                )}
-                            </>
+                            <CardDescription className="flex items-center text-sm mt-0.5">
+                            <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" /> 
+                            Devolução: {format(parse(loan.actualReturnDate, 'yyyy-MM-dd', new Date()), "dd/MM/yy", { locale: ptBR })} às {loan.actualReturnTime}
+                            </CardDescription>
+                        )}
+                         {radioOperator && (
+                            <CardDescription className="flex items-center text-sm mt-0.5">
+                                <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                                Entregue por: {radioOperator.name}
+                            </CardDescription>
+                        )}
+                        {returnedByUser && (
+                        <CardDescription className="flex items-center text-sm mt-0.5">
+                            <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                            Recebido por: {returnedByUser.name}
+                        </CardDescription>
                         )}
                     </div>
                     <span className={`px-2 py-0.5 text-xs rounded-full ${
@@ -186,11 +191,18 @@ export default function RelatoriosPage() {
 
                     <div className="font-bold">Policial Responsável:</div>
                     <div>{getOfficerName(loan.officerId, officers)}</div>
+                     
+                     {radioOperator && (
+                      <>
+                        <div className="font-bold">Entregue por:</div>
+                        <div>{getOperatorName(loan.radioOperatorId, officers)}</div>
+                      </>
+                     )}
 
                      {loan.returnedToUserId && (
                       <>
                         <div className="font-bold">Recebido por:</div>
-                        <div>{getReceivingOfficerName(loan.returnedToUserId, officers)}</div>
+                        <div>{getOperatorName(loan.returnedToUserId, officers)}</div>
                       </>
                      )}
                     
