@@ -127,7 +127,7 @@ export default function CautelasPage() {
       whatsappNumber = '55' + whatsappNumber;
     }
 
-    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://web.whatsapp.com/send?phone=${whatsappNumber}&text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
