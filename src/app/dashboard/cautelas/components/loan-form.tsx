@@ -54,6 +54,10 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
     },
   });
 
+  const radioOperators = React.useMemo(() => {
+    return [...officers].filter(o => o.isRadioOperator).sort((a, b) => a.name.localeCompare(b.name));
+  }, [officers]);
+
   const sortedOfficers = React.useMemo(() => {
     return [...officers].sort((a, b) => a.name.localeCompare(b.name));
   }, [officers]);
@@ -69,13 +73,37 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {radioOperators.length > 0 && (
+          <FormItem>
+            <FormLabel>Rádio Operador (Atalho)</FormLabel>
+            <Select onValueChange={(value) => {
+              if (value) {
+                form.setValue("officerId", value, { shouldValidate: true });
+              }
+            }}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um rádio operador" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {radioOperators.map((operator) => (
+                  <SelectItem key={operator.id} value={operator.id}>
+                    {operator.name} - {operator.rank}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormItem>
+        )}
+
         <FormField
           control={form.control}
           name="officerId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Policial Responsável</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o policial" />
