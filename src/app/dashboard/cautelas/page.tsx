@@ -116,12 +116,13 @@ export default function CautelasPage() {
 
   const handleSendWhatsAppNotification = (loan: Loan, officer: PoliceOfficer, equipments: Equipment[], radioOperator: PoliceOfficer) => {
     const officerName = officer.fullName || officer.name;
+    const operatorName = radioOperator.fullName || radioOperator.name;
     const loanDate = format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR });
     const loanTime = loan.loanTime;
     const equipmentList = equipments.map(eq => `- ${eq.brand} (${eq.serialNumber})`).join('\n');
     let message = `Olá senhor, ${officerName}!\n\nUma cautela de equipamento foi registrada em seu nome em *${loanDate} às ${loanTime}*.\n\n*Equipamentos:*\n${equipmentList}`;
     
-    message += `\n\n*Entregue por:*\n${radioOperator.name}`;
+    message += `\n\n*Entregue por:*\n${operatorName}`;
 
     if (loan.loanObservation) {
         message += `\n\n*Observações da Cautela:*\n${loan.loanObservation}`;
@@ -141,12 +142,13 @@ export default function CautelasPage() {
   
   const handleSendReturnWhatsAppNotification = (loan: Loan, officer: PoliceOfficer, equipments: Equipment[], receivingOperator: PoliceOfficer) => {
     const officerName = officer.fullName || officer.name;
+    const operatorName = receivingOperator.fullName || receivingOperator.name;
     const returnDate = loan.actualReturnDate ? format(parse(loan.actualReturnDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR }) : '';
     const returnTime = loan.actualReturnTime || '';
     const equipmentList = equipments.map(eq => `- ${eq.brand} (${eq.serialNumber})`).join('\n');
     let message = `Olá senhor, ${officerName}!\n\nOs seguintes equipamentos foram devolvidos da sua cautela em *${returnDate} às ${returnTime}*.\n\n*Equipamentos Devolvidos:*\n${equipmentList}`;
     
-    message += `\n\n*Recebido por:*\n${receivingOperator.name}`;
+    message += `\n\n*Recebido por:*\n${operatorName}`;
 
     if (loan.returnObservation) {
       message += `\n\n*Observações da Devolução:*\n${loan.returnObservation}`;
