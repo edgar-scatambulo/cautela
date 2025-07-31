@@ -63,6 +63,7 @@ export interface LoanItem {
 export interface Loan {
   id: string;
   officerId: string; // PoliceOfficer ID
+  radioOperatorId: string; // PoliceOfficer ID
   equipmentIds: string[]; 
   loanDate: string; // ISO Date string for when it was loaned out
   loanTime: string; // HH:MM

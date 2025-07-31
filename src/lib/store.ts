@@ -578,6 +578,3 @@ export const useStore = create<AppState>((set, get) => ({
 export const AppStateProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   return children;
 };
-
-    
-    

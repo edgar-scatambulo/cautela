@@ -48,6 +48,7 @@ export const PoliceOfficerSchema = z.object({
 
 export const LoanSchema = z.object({
   id: z.string().optional(),
+  radioOperatorId: z.string().min(1, "Rádio Operador é obrigatório."),
   officerId: z.string().min(1, "Policial é obrigatório."),
   equipmentIds: z.array(z.string()).min(1, "Selecione ao menos um equipamento."),
   loanDate: z.string().min(1, "Data da cautela é obrigatória."), 

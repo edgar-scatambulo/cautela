@@ -46,6 +46,7 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
   const form = useForm<z.infer<typeof LoanSchema>>({
     resolver: zodResolver(LoanSchema),
     defaultValues: {
+      radioOperatorId: defaultValues?.radioOperatorId || "",
       officerId: defaultValues?.officerId || "",
       equipmentIds: defaultValues?.equipmentIds || [],
       loanDate: defaultValues?.loanDate || format(new Date(), "yyyy-MM-dd"),
@@ -73,26 +74,31 @@ export function LoanForm({ onSubmit, defaultValues, officers, availableEquipment
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {radioOperators.length > 0 && (
-          <FormItem>
-            <FormLabel>Rádio Operador</FormLabel>
-            <Select>
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um rádio operador" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {radioOperators.map((operator) => (
-                  <SelectItem key={operator.id} value={operator.id}>
-                    {operator.name} - {operator.rank}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FormItem>
-        )}
-
+        <FormField
+          control={form.control}
+          name="radioOperatorId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Rádio Operador</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value} disabled={radioOperators.length === 0}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={radioOperators.length === 0 ? "Nenhum rádio operador cadastrado" : "Selecione um rádio operador"} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {radioOperators.map((operator) => (
+                    <SelectItem key={operator.id} value={operator.id}>
+                      {operator.name} - {operator.rank}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
         <FormField
           control={form.control}
           name="officerId"
