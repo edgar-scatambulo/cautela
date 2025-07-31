@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { PoliceOfficerSchema } from "@/lib/schemas";
 import type { PoliceOfficer } from "@/lib/types";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface PoliceOfficerFormProps {
   onSubmit: (values: z.infer<typeof PoliceOfficerSchema>) => void;
@@ -32,6 +33,7 @@ export function PoliceOfficerForm({ onSubmit, defaultValues, isSubmitting }: Pol
       functionalId: defaultValues?.functionalId || "", // Will be "Contato"
       rank: defaultValues?.rank || "",
       unit: defaultValues?.unit || "", 
+      isRadioOperator: defaultValues?.isRadioOperator || false,
       observations: defaultValues?.observations || "", 
     },
   });
@@ -96,6 +98,27 @@ export function PoliceOfficerForm({ onSubmit, defaultValues, isSubmitting }: Pol
             )}
           />
         </div>
+
+        <FormField
+          control={form.control}
+          name="isRadioOperator"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3 shadow-sm">
+                <FormControl>
+                    <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        id="isRadioOperator"
+                    />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                    <FormLabel htmlFor="isRadioOperator" className="cursor-pointer">
+                        Rádio Operador
+                    </FormLabel>
+                </div>
+            </FormItem>
+          )}
+        />
        
         <div className="flex justify-end pt-4">
           <Button type="submit" disabled={isSubmitting}>

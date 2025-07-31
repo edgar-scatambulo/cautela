@@ -44,6 +44,7 @@ export interface PoliceOfficer {
   functionalId: string; // "Contato" on UI (formerly ID Funcional)
   rank: string; // Graduação/Posto
   unit?: string; // Unidade/Setor - Now optional
+  isRadioOperator?: boolean;
   observations?: string;
   createdAt: string; // ISO Date string
   updatedAt: string; // ISO Date string

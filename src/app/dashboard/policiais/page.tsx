@@ -20,7 +20,7 @@ import { PoliceOfficerForm } from './components/police-officer-form';
 import { useStore } from '@/lib/store';
 import type { PoliceOfficer, Loan, Equipment } from '@/lib/types';
 import { LoanStatus, UserRole } from '@/lib/types';
-import { Shield, UserPlus, Edit3, Award, Trash2, Eye, Info, UserCircle, Mail, CalendarDays, Printer as PrinterIconLucide, CaseSensitive, Upload, Search } from 'lucide-react';
+import { Shield, UserPlus, Edit3, Award, Trash2, Eye, Info, UserCircle, Mail, CalendarDays, Printer as PrinterIconLucide, CaseSensitive, Upload, Search, Headset } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PoliceOfficerSchema } from '@/lib/schemas';
 import type { z } from 'zod';
@@ -221,6 +221,7 @@ export default function PoliciaisPage() {
             ...row,
             fullName: row.fullName || undefined,
             unit: row.unit || undefined,
+            isRadioOperator: ['true', '1', 'sim'].includes(row.isRadioOperator?.toLowerCase()),
             observations: row.observations || undefined,
           });
 
@@ -287,7 +288,7 @@ export default function PoliciaisPage() {
               <DialogHeader>
                   <DialogTitle>Importar Policiais em Lote</DialogTitle>
                   <ShadDialogDescription>
-                      Faça o upload de um arquivo CSV. O arquivo deve conter as colunas: <b>name</b>, <b>fullName</b>, <b>functionalId</b>, <b>rank</b>. As colunas <b>unit</b> e <b>observations</b> são opcionais.
+                      Faça o upload de um arquivo CSV. O arquivo deve conter as colunas: <b>name</b>, <b>fullName</b>, <b>functionalId</b>, <b>rank</b>. As colunas <b>unit</b>, <b>isRadioOperator</b> (true/false) e <b>observations</b> são opcionais.
                   </ShadDialogDescription>
               </DialogHeader>
               <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
@@ -537,6 +538,12 @@ export default function PoliciaisPage() {
                     {selectedOfficerForDetails.fullName && <p><strong className="text-muted-foreground">Nome Completo:</strong> {selectedOfficerForDetails.fullName}</p>}
                     <p><strong className="text-muted-foreground">Posto/Grad.:</strong> {selectedOfficerForDetails.rank}</p>
                     <p><strong className="text-muted-foreground">Contato:</strong> <ContactDisplay contactValue={selectedOfficerForDetails.functionalId} /></p>
+                    {selectedOfficerForDetails.isRadioOperator && (
+                        <p className="flex items-center">
+                            <Headset className="h-4 w-4 mr-2 text-primary" />
+                            <strong className="text-primary">Rádio Operador</strong>
+                        </p>
+                    )}
                     {selectedOfficerForDetails.unit && <p><strong className="text-muted-foreground">Unidade:</strong> {selectedOfficerForDetails.unit}</p>}
                     {selectedOfficerForDetails.observations && <p className="md:col-span-2 mt-1"><strong className="text-muted-foreground">Observações:</strong> {selectedOfficerForDetails.observations}</p>}
                      <p className="text-xs text-muted-foreground md:col-span-2 mt-2">Cadastrado em: {format(parseISO(selectedOfficerForDetails.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
@@ -607,5 +614,3 @@ export default function PoliciaisPage() {
     </TooltipProvider>
   );
 }
-
-    
