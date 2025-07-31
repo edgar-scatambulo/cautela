@@ -65,12 +65,14 @@ export default function DashboardPage() {
     return officer ? `${officer.name} (${officer.rank})` : 'Desconhecido';
   };
 
-  const handleSendWhatsAppNotification = (loan: Loan, officer: PoliceOfficer, equipments: Equipment[]) => {
+  const handleSendWhatsAppNotification = (loan: Loan, officer: PoliceOfficer, equipments: Equipment[], radioOperator: PoliceOfficer) => {
     const officerName = officer.fullName || officer.name;
     const loanDate = format(parse(loan.loanDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR });
     const loanTime = loan.loanTime;
     const equipmentList = equipments.map(eq => `- ${eq.brand} (${eq.serialNumber})`).join('\n');
     let message = `Olá senhor, ${officerName}!\n\nUma cautela de equipamento foi registrada em seu nome em *${loanDate} às ${loanTime}*.\n\n*Equipamentos:*\n${equipmentList}`;
+
+    message += `\n\n*Entregue por:*\n${radioOperator.name}`;
 
     if (loan.loanObservation) {
         message += `\n\n*Observações da Cautela:*\n${loan.loanObservation}`;
@@ -88,12 +90,14 @@ export default function DashboardPage() {
     window.open(whatsappUrl, '_blank');
   };
 
-  const handleSendReturnWhatsAppNotification = (loan: Loan, officer: PoliceOfficer, equipments: Equipment[]) => {
+  const handleSendReturnWhatsAppNotification = (loan: Loan, officer: PoliceOfficer, equipments: Equipment[], receivingOperator: PoliceOfficer) => {
     const officerName = officer.fullName || officer.name;
     const returnDate = loan.actualReturnDate ? format(parse(loan.actualReturnDate, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy", { locale: ptBR }) : '';
     const returnTime = loan.actualReturnTime || '';
     const equipmentList = equipments.map(eq => `- ${eq.brand} (${eq.serialNumber})`).join('\n');
     let message = `Olá senhor, ${officerName}!\n\nOs seguintes equipamentos foram devolvidos da sua cautela em *${returnDate} às ${returnTime}*.\n\n*Equipamentos Devolvidos:*\n${equipmentList}`;
+
+    message += `\n\n*Recebido por:*\n${receivingOperator.name}`;
 
     if (loan.returnObservation) {
       message += `\n\n*Observações da Devolução:*\n${loan.returnObservation}`;
@@ -113,13 +117,13 @@ export default function DashboardPage() {
   const handleLoanFormSubmit = async (values: z.infer<typeof LoanSchema>) => {
     setIsSubmittingLoan(true);
     try {
-      const { newLoan, officer, loanedEquipments } = await addLoan(values);
+      const { newLoan, officer, loanedEquipments, radioOperator } = await addLoan(values);
       
       toast({ 
         title: "Cautela Registrada", 
         description: `Nova cautela para ${officer.name} registrada com sucesso.`,
         action: (
-          <Button variant="outline" size="sm" onClick={() => handleSendWhatsAppNotification(newLoan, officer, loanedEquipments)}>
+          <Button variant="outline" size="sm" onClick={() => handleSendWhatsAppNotification(newLoan, officer, loanedEquipments, radioOperator)}>
             Notificar via WhatsApp
           </Button>
         )
@@ -140,13 +144,13 @@ export default function DashboardPage() {
     }
     setIsSubmittingReturn(true);
     try {
-      const { returnedLoan, officer, returnedEquipments } = await updateLoanStatus(selectedLoanForReturn.id, LoanStatus.DEVOLVIDO, equipmentIdsForCurrentReturn, undefined, undefined, returnObservation, receivingOperatorId);
+      const { returnedLoan, officer, returnedEquipments, receivingOperator } = await updateLoanStatus(selectedLoanForReturn.id, LoanStatus.DEVOLVIDO, equipmentIdsForCurrentReturn, undefined, undefined, returnObservation, receivingOperatorId);
       
       toast({ 
         title: "Devolução Registrada", 
         description: "A devolução foi registrada com sucesso.",
         action: (
-          <Button variant="outline" size="sm" onClick={() => handleSendReturnWhatsAppNotification(returnedLoan, officer, returnedEquipments)}>
+          <Button variant="outline" size="sm" onClick={() => handleSendReturnWhatsAppNotification(returnedLoan, officer, returnedEquipments, receivingOperator)}>
             Notificar via WhatsApp
           </Button>
         )

@@ -73,8 +73,8 @@ interface AppState {
   deleteOfficer: (officerId: string) => Promise<void>;
   
   // Loan Actions
-  addLoan: (loanData: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'loanedByUserId' >) => Promise<{ newLoan: Loan, officer: PoliceOfficer, loanedEquipments: Equipment[] }>;
-  updateLoanStatus: (loanId: string, status: LoanStatus, equipmentIdsToReturn?: string[], returnDate?: string, returnTime?: string, returnObservation?: string, returnedToUserId?: string) => Promise<{ returnedLoan: Loan, officer: PoliceOfficer, returnedEquipments: Equipment[] }>;
+  addLoan: (loanData: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'loanedByUserId' >) => Promise<{ newLoan: Loan, officer: PoliceOfficer, loanedEquipments: Equipment[], radioOperator: PoliceOfficer }>;
+  updateLoanStatus: (loanId: string, status: LoanStatus, equipmentIdsToReturn?: string[], returnDate?: string, returnTime?: string, returnObservation?: string, returnedToUserId?: string) => Promise<{ returnedLoan: Loan, officer: PoliceOfficer, returnedEquipments: Equipment[], receivingOperator: PoliceOfficer }>;
 }
 
 const FIREBASE_NOT_CONFIGURED_ERROR = "Firebase não está configurado. Verifique as variáveis de ambiente do seu projeto.";
@@ -512,12 +512,16 @@ export const useStore = create<AppState>((set, get) => ({
     const officer = officers.find(o => o.id === loanData.officerId);
     if (!officer) throw new Error("Policial não encontrado para notificação.");
     
+    const radioOperator = officers.find(o => o.id === loanData.radioOperatorId);
+    if (!radioOperator) throw new Error("Rádio Operador não encontrado para notificação.");
+    
     const loanedEquipments = loanData.equipmentIds.map(id => equipments.find(e => e.id === id)).filter(Boolean) as Equipment[];
 
     return { 
       newLoan: { ...loanData, id: newLoanRef.id, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), status: LoanStatus.ENTREGUE, loanedByUserId: currentUser.id },
       officer,
-      loanedEquipments
+      loanedEquipments,
+      radioOperator,
     };
   },
 
@@ -602,9 +606,12 @@ export const useStore = create<AppState>((set, get) => ({
     const officer = officers.find(o => o.id === currentLoanData.officerId);
     if (!officer) throw new Error("Policial não encontrado para notificação.");
 
+    const receivingOperator = officers.find(o => o.id === returnedToUserId);
+    if (!receivingOperator) throw new Error("Rádio Operador recebedor não encontrado para notificação.");
+
     const returnedEquipments = equipmentToReturnIds.map(id => equipments.find(e => e.id === id)).filter(Boolean) as Equipment[];
 
-    return { returnedLoan, officer, returnedEquipments };
+    return { returnedLoan, officer, returnedEquipments, receivingOperator };
   },
 }));
 
